@@ -91,7 +91,6 @@ module.exports = {
                         visibility: visibility ?? event.visibility,
                         slug: name ? `${generateSlugName(name)}_${Math.floor(Math.random() * 10000)}` : event.slug,
                         tags: name ? [...event.tags, name] : event.tags,
-                        status: status ?? event.status,
                         description: description ?? event.description,
                         starts_at: starts_at ?? event.starts_at,
                         ends_at: ends_at ?? event.ends_at
