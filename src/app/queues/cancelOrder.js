@@ -23,7 +23,7 @@ module.exports = {
                 })
 
                 // Garante que não fique negativo
-                const newOrdersPendingCash = Math.max(0, currentCash - amountToSubtract);
+                const newOrdersPendingCash = Math.max(0, Number(event.orders_pending_cash) - Number(order.amount_after_rate));
 
                 await event.updateOne({
                     $inc: {
