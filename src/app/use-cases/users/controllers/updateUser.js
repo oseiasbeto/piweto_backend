@@ -27,13 +27,12 @@ module.exports = {
             else {
                 await user.updateOne({
                     $set: {
-                        first_name: first_name ?? user.first_name,
-                        last_name: last_name ?? user.last_name,
+                        first_name: first_name !== '' ? first_name : user.first_name,
+                        last_name: last_name !== '' ? last_name : user.last_name,
                         full_name: `${first_name ? first_name.replace(/\s/g, '') : user.first_name} ${last_name ? last_name.replace(/\s/g, '') : user.last_name}`,
                         bio: bio ?? user.bio,
                         phone: phone ?? user.phone,
                         address: address ?? user.address,
-                        updated_at: moment()
                     }
                 })
 

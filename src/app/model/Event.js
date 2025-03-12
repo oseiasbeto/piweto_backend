@@ -14,11 +14,23 @@ const event = new mongoose.Schema({
         required: true
     },
     cover: {
-        key: {
+        original: {
             type: String,
             default: null
         },
-        url: {
+        low: {
+            type: String,
+            default: null
+        },
+        high: {
+            type: String,
+            default: null
+        },
+        medium: {
+            type: String,
+            default: null
+        },
+        key: {
             type: String,
             default: null
         }

@@ -29,7 +29,7 @@ module.exports = {
                     await batch.deleteOne()
                     await event.updateOne({
                         $inc: {
-                            tickets_available_count: - batch.quantity
+                            tickets_available_count: -batch.quantity
                         }
                     })
                     res.status(200).send({

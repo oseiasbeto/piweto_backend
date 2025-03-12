@@ -1,8 +1,9 @@
 const Order = require("../model/Order")
 const Ticket = require("../model/Ticket")
 const Event = require("../model/Event")
+const Batch = require("../model/Batch")
 const sendMail = require("../mail/sendMail")
-const {closePayment} = require("../services/paypay")
+const { closePayment } = require("../services/paypay")
 
 module.exports = {
     async cancelOrder(order_id) {
@@ -20,17 +21,35 @@ module.exports = {
                         status: "c"
                     }
                 })
+
+                // Garante que não fique negativo
+                const newOrdersPendingCash = Math.max(0, currentCash - amountToSubtract);
+
                 await event.updateOne({
                     $inc: {
-                        sales_count: - 1,
-                        orders_pending_cash: - order.amount_after_rate
-                    }
-                })
+                        orders_pending_count: -1,
+                        tickets_available_count: Number(order.total_tickets_selected)
+                    },
+                    $set: { orders_pending_cash: newOrdersPendingCash } // Ajusta para garantir que não fique negativo
+                });
+
                 await Ticket.updateMany({
                     order: order._id
                 }, {
                     $set: {
                         status: 'd'
+                    }
+                })
+
+                order.batches.map(async (b) => {
+                    for (let i = 0; i < b.quantitySelected; i++) {
+                        await Batch.updateOne({
+                            _id: b._id
+                        }, {
+                            $inc: {
+                                quantity: b.quantitySelected
+                            }
+                        })
                     }
                 })
 
@@ -43,7 +62,7 @@ module.exports = {
 
                 closePayment(order.id, `${Date.now()}`)
 
-                console.log(`✅ A reserva do pedido: ${order.id} foi cancelada com sucesso!`)
+                console.log(`A reserva do pedido: ${order.id} foi cancelada com sucesso!`)
             }
         } catch (err) {
             console.log(err.message)

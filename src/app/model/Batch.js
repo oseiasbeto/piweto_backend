@@ -55,12 +55,12 @@ const batch = new mongoose.Schema({
     },
     starts_at: {
         date: {
-            type: String,
+            type: Date,
             required: Date
         },
         hm: {
             type: String,
-            required: true
+            default: null
         }
     },
     ends_at: {
@@ -70,7 +70,7 @@ const batch = new mongoose.Schema({
         },
         hm: {
             type: Date,
-            required: true
+            default: null
         }
     }
 }, {

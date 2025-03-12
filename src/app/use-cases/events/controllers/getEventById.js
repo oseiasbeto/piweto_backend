@@ -10,7 +10,7 @@ module.exports = {
             })
 
             const event = await Event.findOne({
-                id
+                _id: id
             })
             
             if(!event) return res.status(404).send({

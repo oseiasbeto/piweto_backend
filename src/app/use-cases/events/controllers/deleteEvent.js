@@ -1,5 +1,9 @@
 const Event = require("../../../model/Event")
 const Staff = require("../../../model/Staff")
+const Batch = require("../../../model/Batch")
+const Ticket = require("../../../model/Ticket")
+const Order = require("../../../model/Order")
+const cloudinary = require("../../../config/cloudinary");
 
 module.exports = {
     async deleteEvent(req, res) {
@@ -19,7 +23,20 @@ module.exports = {
             })
             else {
                 await event.deleteOne()
+
+                if (event.cover.key) {
+                    await cloudinary.uploader.destroy(event.cover.key)
+                }
                 await Staff.deleteOne({
+                    event: event._id
+                })
+                await Batch.deleteMany({
+                    event: event._id
+                })
+                await Ticket.deleteMany({
+                    event: event._id
+                })
+                await Order.deleteMany({
                     event: event._id
                 })
                 res.status(200).send({

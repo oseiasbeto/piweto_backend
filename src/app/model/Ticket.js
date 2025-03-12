@@ -32,6 +32,10 @@ const ticket = new mongoose.Schema({
         type: String,
         default: ""
     },
+    booking_number: {
+        type: Number,
+        default: 0
+    },
     check_in: {
         at: {
             type: Date,

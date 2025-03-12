@@ -10,7 +10,11 @@ const { connectRedis } = require("./redisClient")
 const connectDB = require('./config/connectDb');
 connectDB();
 
-connectRedis()
+const env = process.env.NODE_ENV
+
+if (env === 'prod') {
+    connectRedis()
+}
 
 // configurando os middlewares
 app.use(cors())

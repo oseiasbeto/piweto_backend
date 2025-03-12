@@ -13,6 +13,10 @@ const order = new mongoose.Schema({
         type: Number,
         required: true
     },
+    reservation_number: {
+        type: Number,
+        required: true
+    },
     total_tickets_selected: {
         type: Number,
         required: true

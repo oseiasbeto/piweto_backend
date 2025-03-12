@@ -1,7 +1,7 @@
 const axios = require("axios");
 
 
-// 🔹 Função principal para envio de emails
+// Função principal para envio de emails
 async function sendMessage(to, message) {
     try {
         const apiKey = process.env.WESENDER_APIKEY

@@ -1,5 +1,4 @@
 const User = require("../../../model/User")
-const sendMail = require("../../../mail/sendMail")
 const generateAccessToken = require("../../../utils/generateAccessToken")
 const generateRefreshToken = require("../../../utils/generateRefreshToken")
 const decryptRefreshToken = require("../../../utils/decryptRefreshToken")
@@ -33,8 +32,7 @@ module.exports = {
                     const iv = session.crypto.iv
 
                     const encrypted_refresh_token = session.token
-                    const secreet_access_token_key = process.env.JWT_ACCESS_TOKEN_SECREET
-                    const secreet_refresh_token_key = process.env.JWT_REFRESH_TOKEN_SECREET
+                    const secreet_refresh_token_key = process.env.JWT_REFRESH_TOKEN_SECRET
 
                     const decrypt_token = decryptRefreshToken({
                         key: _key,

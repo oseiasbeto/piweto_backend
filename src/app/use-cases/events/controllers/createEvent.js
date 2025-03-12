@@ -27,16 +27,11 @@ module.exports = {
                 ends_at
             } = req.body
 
-            console.log(starts_at, ends_at)
             const created_by = req.user.id
 
             if (!name || name == "") {
                 res.status(400).send({
                     message: "O nome do evento e obrigatorio."
-                })
-            } else if (name.length < 3) {
-                res.status(400).send({
-                    message: "ups! digite um nome valido."
                 })
             } else if (!batches || batches.length == 0) {
                 res.status(400).send({
@@ -89,7 +84,7 @@ module.exports = {
 
                     if (batches !== undefined && batches.length) {
                         tickets_available_count = batches.reduce((acc, batch) => {
-                            return acc + batch.quantity;
+                            return acc + Number(batch.quantity); // Converte para número
                         }, 0);
                     } else {
                         tickets_available_count = 0;
@@ -108,7 +103,11 @@ module.exports = {
                         const uploadedImage = await new Promise((resolve, reject) => {
                             const uploadStream = cloudinary.uploader.upload_stream(
                                 {
-                                    folder: "uploads"
+                                    folder: "uploads",
+                                    resource_type: "image", // Defina "video" para vídeos
+                                    transformation: [
+                                        { quality: "auto:good", fetch_format: "auto" } // Qualidade automática
+                                    ]
                                 },
                                 (error, result) => {
                                     if (error) return reject(error);
@@ -120,12 +119,14 @@ module.exports = {
                         });
 
                         cover = {
-                            url: uploadedImage.secure_url,
+                            original: uploadedImage.secure_url, // Link original
+                            low: cloudinary.url(uploadedImage.public_id, { quality: "auto:low", fetch_format: "auto" }),
+                            medium: cloudinary.url(uploadedImage.public_id, { quality: "auto:good", fetch_format: "auto" }),
+                            high: cloudinary.url(uploadedImage.public_id, { quality: "auto:best", fetch_format: "auto" }),
                             key: uploadedImage.public_id
                         }
                     }
-
-
+                    
                     const slug = `${generateSlugName(name)}_${Math.floor(Math.random() * 10000)}`
 
                     const event = await Event.create({
@@ -162,7 +163,7 @@ module.exports = {
                             'invite.status': "a",
                             is_admin: true
                         })
-                        
+
                         if (new_staff) {
                             batches.forEach(async b => {
                                 await Batch.create({
@@ -178,12 +179,10 @@ module.exports = {
                                     quantity: Number(b.quantity) || 0,
                                     price: Number(b.price) || 0,
                                     starts_at: {
-                                        date: b["starts_at.date"] ? moment(b["starts_at.date"]) : null,
-                                        hm: b["starts_at.hm"] ? moment(b["starts_at.hm"]) : null
+                                        date: b["starts_at.date"] ? new Date(b["starts_at.date"]) : null,
                                     },
                                     ends_at: {
-                                        date: b["ends_at.date"] ? moment(b["ends_at.date"]) : null,
-                                        hm: b["ends_at.hm"] ? moment(b["ends_at.hm"]) : null
+                                        date: b["ends_at.date"] ? new Date(b["ends_at.date"]) : null,
                                     },
                                     quantity_for_purchase: {
                                         min: Number(b["quantity_for_purchase.min"]) || 1,

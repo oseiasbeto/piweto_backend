@@ -54,11 +54,11 @@ module.exports = {
                         amount_after_rate = 0,
                         total_tickets_selected = 0;
 
-                    const rate = process.env.RATE_SALE
+                    const rate = Number(process.env.RATE_SALE || 4); // Garantir que seja um número
 
                     if (amount > 0) {
-                        rate_amount = (amount / 100 * rate)
-                        amount_after_rate = (amount - rate_amount)
+                        rate_amount = (amount * rate) / 100; // Melhor forma de calcular a taxa
+                        amount_after_rate = amount - rate_amount; // Valor final
                     }
 
                     if (cart.batches.length) {
@@ -67,6 +67,12 @@ module.exports = {
                     } else return res.status(400).send({
                         message: "Ups! este carrinho esta vazio, adicone lotes nele para prosseguir"
                     })
+
+                    // Buscar o último número de reserva para este evento
+                    const lastOrder = await Order.findOne({ event: event._id, status: "a" }).sort({ reservation_number: -1 });
+
+                    // Definir o próximo número de reserva
+                    const reservation_number = lastOrder ? lastOrder.reservation_number + 1 : 1;
 
                     batches.forEach(async b => {
                         const batch = await Batch.findOne({
@@ -88,6 +94,7 @@ module.exports = {
                     if (!user) return res.status(400).send({
                         message: "Algo deu errado, faz o login e tente novamente!"
                     })
+
                     if (cart.amount == 0) {
                         const newOrder = await Order.create({
                             id: order_id,
@@ -98,6 +105,7 @@ module.exports = {
                             coupon: cart.coupon,
                             status: 'p',
                             amount,
+                            reservation_number,
                             total_tickets_selected,
                             amount_after_discount,
                             amount_after_rate,
@@ -117,6 +125,7 @@ module.exports = {
                                         id: Date.now(),
                                         name: b.name,
                                         type: b.type,
+                                        booking_number: newOrder.reservation_number,
                                         order: newOrder._id,
                                         batch: b._id,
                                         price: b.price,
@@ -141,22 +150,13 @@ module.exports = {
                                             quantity: - b.quantitySelected
                                         }
                                     })
-
-                                    await event.updateOne({
-                                        $inc: {
-                                            orders_pending_cash: - amount_after_rate,
-                                            tickets_purchased_count: + b.quantitySelected,
-                                            tickets_available_count: - b.quantitySelected
-                                        }
-                                    })
                                 }
                             })
 
                             await event.updateOne({
                                 $inc: {
-                                    orders_pending_cash: - amount_after_rate,
-                                    orders_pending_count: - 1,
-                                    sales_count: + 1
+                                    tickets_available_count: - Number(total_tickets_selected),
+                                    orders_pending_cash: Number(amount_after_rate)
                                 }
                             })
 
@@ -183,6 +183,7 @@ module.exports = {
                                             batches: batches,
                                             rate: amount > 0 ? rate : 0,
                                             event: event._id,
+                                            reservation_number,
                                             expires_at: moment().add(30, 'minutes'),
                                             coupon: cart.coupon,
                                             status: 'p',
@@ -208,6 +209,7 @@ module.exports = {
                                                     await Ticket.create({
                                                         id: Date.now(),
                                                         name: b.name,
+                                                        booking_number: newOrder.reservation_number,
                                                         type: b.type,
                                                         order: newOrder._id,
                                                         batch: b._id,
@@ -232,22 +234,10 @@ module.exports = {
                                                             quantity: - b.quantitySelected
                                                         }
                                                     })
-                                                    await event.updateOne({
-                                                        $inc: {
-                                                            tickets_available_count: - b.quantitySelected,
-                                                            orders_pending_cash: - amount_after_rate,
-                                                            tickets_purchased_count: + b.quantitySelected
-                                                        }
-                                                    })
+
                                                 }
                                             })
 
-                                            await event.updateOne({
-                                                $inc: {
-                                                    orders_pending_cash: + amount_after_rate,
-                                                    orders_pending_count: + 1
-                                                }
-                                            })
                                             const EXPIRATION_TIME = 3600;
                                             await redis.set(`pedido:${order_id}`, 'pending', { EX: EXPIRATION_TIME });
 
@@ -255,14 +245,22 @@ module.exports = {
                                                 id: newOrder.id,
                                                 eventName: event.name,
                                                 userFullName: user.full_name,
+                                                reservationNumber: newOrder.reservation_number,
                                                 ticketQuantity: total_tickets_selected,
                                                 amount: formatAmount(newOrder.amount),
                                                 reference: newOrder.biz_content.reference_id,
                                                 entity: newOrder.biz_content.entity_id,
                                                 validity: moment(newOrder.expires_at).format("YYYY/MM/DD HH:mm")
                                             })
+                                            
                                             sendMessage(newOrder.data.phone, `Adquira os teus ingressos pela Entidate: ${newOrder.biz_content.entity_id} Referencia: ${newOrder.biz_content.reference_id} Montante: ${formatAmount(newOrder.amount)}`)
 
+                                            await event.updateOne({
+                                                $inc: {
+                                                    tickets_available_count: -Number(total_tickets_selected),
+                                                    orders_pending_cash: Number(newOrder.amount_after_rate) 
+                                                }
+                                            })
                                             res.status(200).send({
                                                 newOrder,
                                                 message: "Boa! a sua reserva foi criada com sucesso."
@@ -279,8 +277,6 @@ module.exports = {
                     }
                 }
             }
-
-
         } catch (err) {
 
             // caso haja um erro interno retorne status 500.

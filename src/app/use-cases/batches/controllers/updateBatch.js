@@ -56,7 +56,7 @@ module.exports = {
                     if (quantity !== undefined) {
                         await event.updateOne({
                             $set: {
-                                tickets_available_count: updateTicketsCount(event.tickets_count, batch.quantity, quantity)
+                                tickets_available_count: updateTicketsCount(event.tickets_available_count, batch.quantity, quantity)
                             }
                         })
                     }
