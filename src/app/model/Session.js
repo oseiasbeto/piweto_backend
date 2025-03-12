@@ -1,9 +1,10 @@
 const mongoose = require("mongoose")
+const { randomUUID } = require("crypto")
 
 const session = new mongoose.Schema({
     id: {
         type: String,
-        default: `${Date.now()}`
+        default: randomUUID().toString()
     },
     token: {
         type: String,
@@ -19,10 +20,19 @@ const session = new mongoose.Schema({
             default: null
         }
     },
+    userAgent: {
+        type: String,
+        default: null
+    },
     status: {
         type: String,
         enum: ["a", "d"],
         default: "a"
+    },
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
     },
     created_at: {
         type: Date,
