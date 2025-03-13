@@ -10,7 +10,6 @@ const getTotalTicketsSelected = require("../../../utils/getTotalTicketsSelected"
 const { redis } = require('../../../redisClient');
 const { executeReferencePayment } = require("../../../services/paypay")
 const moment = require('moment')
-const moment_timezone = require('moment-timezone');
 
 module.exports = {
     async createOrder(req, res) {
@@ -239,7 +238,7 @@ module.exports = {
                                                 }
                                             })
 
-                                            const EXPIRATION_TIME = 50 //3600;
+                                            const EXPIRATION_TIME = 10 //3600;
                                             await redis.set(`pedido:${order_id}`, 'pending', { EX: EXPIRATION_TIME });
 
                                             sendMail(user.email, 'payment-ref', `Reserva iniciada para o evento ${event.name}`, {
@@ -251,7 +250,7 @@ module.exports = {
                                                 amount: formatAmount(newOrder.amount),
                                                 reference: newOrder.biz_content.reference_id,
                                                 entity: newOrder.biz_content.entity_id,
-                                                validity: moment_timezone.utc(newOrder.expires_at).tz('Africa/Luanda').format("YYYY/MM/DD HH:mm")
+                                                validity: moment.utc(newOrder.expires_at).add(1, 'hour').format("YYYY/MM/DD HH:mm")
                                             })
                                             
                                             /* 
