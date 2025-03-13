@@ -10,6 +10,7 @@ const getTotalTicketsSelected = require("../../../utils/getTotalTicketsSelected"
 const { redis } = require('../../../redisClient');
 const { executeReferencePayment } = require("../../../services/paypay")
 const moment = require('moment')
+const moment_timezone = require('moment-timezone');
 
 module.exports = {
     async createOrder(req, res) {
@@ -238,7 +239,7 @@ module.exports = {
                                                 }
                                             })
 
-                                            const EXPIRATION_TIME = 3600;
+                                            const EXPIRATION_TIME = 50 //3600;
                                             await redis.set(`pedido:${order_id}`, 'pending', { EX: EXPIRATION_TIME });
 
                                             sendMail(user.email, 'payment-ref', `Reserva iniciada para o evento ${event.name}`, {
@@ -250,13 +251,13 @@ module.exports = {
                                                 amount: formatAmount(newOrder.amount),
                                                 reference: newOrder.biz_content.reference_id,
                                                 entity: newOrder.biz_content.entity_id,
-                                                validity: moment.utc(newOrder.expires_at).local().format("YYYY/MM/DD HH:mm")
+                                                validity: moment_timezone.utc(newOrder.expires_at).tz('Africa/Luanda').format("YYYY/MM/DD HH:mm")
                                             })
                                             
                                             /* 
                                             sendMessage(newOrder.data.phone, `Adquira os teus ingressos pela Entidate: ${newOrder.biz_content.entity_id} Referencia: ${newOrder.biz_content.reference_id} Montante: ${formatAmount(newOrder.amount)}`)
                                             */
-                                           
+
                                             await event.updateOne({
                                                 $inc: {
                                                     tickets_available_count: -Number(total_tickets_selected),
