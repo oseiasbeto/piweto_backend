@@ -203,8 +203,6 @@ module.exports = {
                                         if (newOrder) {
 
                                             batches.map(async (b) => {
-
-
                                                 for (let i = 0; i < b.quantitySelected; i++) {
                                                     await Ticket.create({
                                                         id: Date.now(),
@@ -238,7 +236,7 @@ module.exports = {
                                                 }
                                             })
 
-                                            const EXPIRATION_TIME = 100 //3600;
+                                            const EXPIRATION_TIME = 3600;
                                             await redis.set(`pedido:${order_id}`, 'pending', { EX: EXPIRATION_TIME });
 
                                             sendMail(user.email, 'payment-ref', `Reserva iniciada para o evento ${event.name}`, {
@@ -250,12 +248,10 @@ module.exports = {
                                                 amount: formatAmount(newOrder.amount),
                                                 reference: newOrder.biz_content.reference_id,
                                                 entity: newOrder.biz_content.entity_id,
-                                                validity: moment.utc(newOrder.expires_at).add(1, 'hour').format("YYYY/MM/DD HH:mm")
+                                                validity: moment(newOrder.expires_at).format("YYYY/MM/DD HH:mm")
                                             })
                                             
-                                            /* 
                                             sendMessage(newOrder.data.phone, `Adquira os teus ingressos pela Entidate: ${newOrder.biz_content.entity_id} Referencia: ${newOrder.biz_content.reference_id} Montante: ${formatAmount(newOrder.amount)}`)
-                                            */
 
                                             await event.updateOne({
                                                 $inc: {
