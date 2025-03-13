@@ -6,7 +6,7 @@ const decryptRefreshToken = require("../../../utils/decryptRefreshToken");
 const decodeTokem = require("../../../utils/decodeTokem"); // Corrigir typo: "decodeTokem" -> "decodeToken"
 const encryptRefreshToken = require("../../../utils/encryptRefreshToken");
 const userTransformer = require("../../../utils/userTransformer");
-const moment = require("moment");
+
 
 module.exports = {
     async refreshToken(req, res) {
@@ -77,8 +77,7 @@ module.exports = {
                         key: _encrypted_refresh_token.key,
                         iv: _encrypted_refresh_token.iv,
                     },
-                    token: _encrypted_refresh_token.encrypted_refresh_token,
-                    updated_at: moment(),
+                    token: _encrypted_refresh_token.encrypted_refresh_token
                 },
             });
 
