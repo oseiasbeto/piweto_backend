@@ -250,12 +250,13 @@ module.exports = {
                                                 amount: formatAmount(newOrder.amount),
                                                 reference: newOrder.biz_content.reference_id,
                                                 entity: newOrder.biz_content.entity_id,
-                                                validity: moment(newOrder.expires_at).format("YYYY/MM/DD HH:mm")
+                                                validity: moment.utc(newOrder.expires_at).local().format("YYYY/MM/DD HH:mm")
                                             })
                                             
-                                            
+                                            /* 
                                             sendMessage(newOrder.data.phone, `Adquira os teus ingressos pela Entidate: ${newOrder.biz_content.entity_id} Referencia: ${newOrder.biz_content.reference_id} Montante: ${formatAmount(newOrder.amount)}`)
-                                            
+                                            */
+                                           
                                             await event.updateOne({
                                                 $inc: {
                                                     tickets_available_count: -Number(total_tickets_selected),
