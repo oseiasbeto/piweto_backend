@@ -1,10 +1,10 @@
 const mongoose = require("mongoose")
-const { randomUUID } = require("crypto")
 
 const session = new mongoose.Schema({
     id: {
         type: String,
-        default: randomUUID().toString()
+        required: true,
+        unique: true
     },
     token: {
         type: String,

@@ -4,6 +4,7 @@ const generateAccessToken = require("../../../utils/generateAccessToken");
 const generateRefreshToken = require("../../../utils/generateRefreshToken");
 const encryptRefreshToken = require("../../../utils/encryptRefreshToken");
 const userTransformer = require("../../../utils/userTransformer");
+const { randomUUID } = require("crypto")
 const { compare } = require("bcryptjs");
 
 module.exports = {
@@ -53,6 +54,7 @@ module.exports = {
             // await Session.updateMany({ user: user._id, status: 'a' }, { status: 'i' });
 
             const newSession = new Session({
+                id: randomUUID(),
                 userAgent: (req.headers["user-agent"] || "unknown").substring(0, 255), // Limitar tamanho
                 crypto: {
                     key: _encrypted_refresh_token.key,
