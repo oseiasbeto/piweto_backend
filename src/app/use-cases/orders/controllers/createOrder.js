@@ -238,7 +238,7 @@ module.exports = {
                                                 }
                                             })
 
-                                            const EXPIRATION_TIME = 20 //3600;
+                                            const EXPIRATION_TIME = 100 //3600;
                                             await redis.set(`pedido:${order_id}`, 'pending', { EX: EXPIRATION_TIME });
 
                                             sendMail(user.email, 'payment-ref', `Reserva iniciada para o evento ${event.name}`, {

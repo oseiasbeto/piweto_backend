@@ -8,6 +8,7 @@ const { closePayment } = require("../services/paypay")
 module.exports = {
     async cancelOrder(order_id) {
         try {
+            console.log(order_id)
             const order = await Order.findOne({
                 id: order_id
             })
