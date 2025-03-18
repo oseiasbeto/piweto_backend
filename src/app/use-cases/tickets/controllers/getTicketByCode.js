@@ -10,8 +10,7 @@ module.exports = {
             })
 
             const ticket = await Ticket.findOne({
-                code,
-                status: "a"
+                code
             })
             
             if(!ticket) return res.status(404).send({

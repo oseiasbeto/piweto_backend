@@ -12,7 +12,7 @@ const { checkIn } = require("./controllers/checkIn")
 
 // configurando as rotas
 router.get("/", protectedRoute, getAllTickets)
-router.get("/:code", protectedRoute, getTicketByCode)
+router.get("/:code", getTicketByCode)
 router.put("/:code", checkIn)
 
 // exportando as rotas
