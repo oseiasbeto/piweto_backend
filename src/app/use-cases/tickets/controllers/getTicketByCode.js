@@ -12,6 +12,9 @@ module.exports = {
             const ticket = await Ticket.findOne({
                 code
             })
+            .populate("order")
+            .populate("event")
+            .populate("batch")
             
             if(!ticket) return res.status(404).send({
                 message: "Ups! nao achamos nenhum ingresso activo com este codigo."

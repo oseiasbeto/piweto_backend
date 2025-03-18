@@ -1,5 +1,6 @@
 const Batch = require("../../../model/Batch")
 const Event = require("../../../model/Event")
+const Ticket = require("../../../model/Ticket")
 
 module.exports = {
     async deleteBatch(req, res) {
@@ -32,6 +33,16 @@ module.exports = {
                             tickets_available_count: -batch.quantity
                         }
                     })
+                    await Ticket.updateMany(
+                        {
+                            batch: batch._id
+                        },
+                        {
+                            $set: {
+                                status: "d"
+                            }
+                        }
+                    )
                     res.status(200).send({
                         message: "Lote eliminado com sucesso."
                     })
