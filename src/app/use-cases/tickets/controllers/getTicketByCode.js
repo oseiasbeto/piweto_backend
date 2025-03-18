@@ -15,6 +15,7 @@ module.exports = {
             .populate("order")
             .populate("event")
             .populate("batch")
+            .populate("costumer")
             
             if(!ticket) return res.status(404).send({
                 message: "Ups! nao achamos nenhum ingresso activo com este codigo."
