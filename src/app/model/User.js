@@ -17,10 +17,14 @@ const user = new mongoose.Schema({
         type: String,
         default: null
     },
-    phone: {
+    google_id: {
         type: String,
         required: true,
         unique: true
+    },
+    phone: {
+        type: String,
+        default: null
     },
     avatar: {
         key: {
@@ -94,7 +98,7 @@ const user = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: true
+        default: null
     }
 }, {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }

@@ -253,8 +253,10 @@ module.exports = { // Exporta o módulo com a função createOrder
                                             }
 
                                             // Envia mensagem (ex.: SMS) com detalhes do pagamento
-                                            sendMessage(newOrder.data.phone, `Adquira os teus ingressos pela Entidate: ${newOrder.biz_content.entity_id} Referencia: ${newOrder.biz_content.reference_id} Montante: ${formatAmount(newOrder.amount)}`)
-
+                                            if (newOrder.data.phone.length) {
+                                                sendMessage(newOrder.data.phone, `Adquira os teus ingressos pela Entidate: ${newOrder.biz_content.entity_id} Referencia: ${newOrder.biz_content.reference_id} Montante: ${formatAmount(newOrder.amount)}`)
+                                            }
+                                            
                                             await event.updateOne({ // Atualiza o evento
                                                 $inc: {
                                                     tickets_available_count: -Number(total_tickets_selected),

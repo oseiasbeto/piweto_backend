@@ -24,6 +24,10 @@ const session = new mongoose.Schema({
         type: String,
         default: null
     },
+    authentication_method: {
+        type: String,
+        default: "phone_number"
+    },
     status: {
         type: String,
         enum: ["a", "d"],
@@ -33,14 +37,6 @@ const session = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         required: true
-    },
-    created_at: {
-        type: Date,
-        default: Date.now()
-    },
-    updated_at: {
-        type: Date,
-        default: Date.now()
     }
 }, {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
