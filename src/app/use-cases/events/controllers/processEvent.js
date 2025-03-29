@@ -44,7 +44,7 @@ module.exports = {
 
                         if (event?.created_by?.email) {
                             sendMail(event.created_by.email, 'status-event', `Status do seu evento - ${event.name}`, {
-                                userFullName: event.created_by.name.full_name,
+                                userFullName: event.created_by.full_name,
                                 eventTitle: event.name,
                                 isApproved: status == 'a' ? true : false,
                                 eventLink: process.env.CLIENT_URL + `evento/${event.created_by.slug}`,
