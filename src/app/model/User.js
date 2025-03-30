@@ -19,8 +19,7 @@ const user = new mongoose.Schema({
     },
     google_id: {
         type: String,
-        required: true,
-        unique: true
+        default: null
     },
     phone: {
         type: String,
