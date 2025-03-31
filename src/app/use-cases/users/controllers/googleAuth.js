@@ -53,8 +53,8 @@ const googleAuth = async (req, res) => {
             user = new User({
                 google_id: sub,
                 email: email,
-                first_name: given_name,
-                last_name: family_name,
+                first_name: given_name || name,
+                last_name: family_name || name,
                 full_name: name,
                 status: "a",
                 password: null
