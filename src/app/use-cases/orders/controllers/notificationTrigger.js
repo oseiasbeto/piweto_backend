@@ -99,6 +99,9 @@ module.exports = { // Exporta o módulo como um objeto contendo a função notif
                         }
                     }
                     break; // Finaliza o processamento do caso "TRADE_FINISHED"
+                case "TRANSFER_SUCCESS":
+                    consoele.log(status, out_trade_no)
+                    break;
             }
             return 'success' // Retorna a string 'success' para indicar que a notificação foi processada com sucesso (útil para webhooks)
         } catch (err) { // Captura qualquer erro que ocorra durante o processamento
