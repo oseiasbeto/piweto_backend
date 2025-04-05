@@ -4,11 +4,20 @@ const { redis } = require('../../../redisClient'); // Importa o cliente Redis pa
 const sendMail = require("../../../mail/sendMail") // Importa função reutilizável para enviar e-mails aos usuários
 const moment = require("moment") // Importa a biblioteca Moment.js para facilitar manipulação e formatação de datas
 const Event = require("../../../model/Event"); // Importa o modelo Event para manipular dados de eventos no MongoDB
+const Financial = require("../../../model/Financial");
+const Payout = require("../../../model/Payout");
+
 const formatAmount = require("../../../utils/formatAmount"); // Importa função utilitária para formatar valores monetários (ex.: adicionar moeda ou casas decimais)
+require('dotenv').config(); // Carrega variáveis do .env
 
 module.exports = { // Exporta o módulo como um objeto contendo a função notificationTrigger
     async notificationTrigger(req, res) { // Define uma função assíncrona que processa notificações de status (ex.: de um gateway de pagamento)
         try { // Inicia um bloco try-catch para capturar e tratar erros durante a execução
+
+            const PLATFORM_FEE = parseFloat(process.env.PLATFORM_FEE_PERCENTAGE);
+            const PLATFORM_PROFIT = parseFloat(process.env.PLATFORM_PROFIT_PERCENTAGE);
+            const ORGANIZER_PAYOUT = parseFloat(process.env.ORGANIZER_PAYOUT_PERCENTAGE);
+
             const { status, out_trade_no } = req.body // Desestrutura o corpo da requisição para obter o status da transação e o ID do pedido (out_trade_no)
 
             switch (status) { // Usa uma estrutura switch para avaliar o valor do status recebido
@@ -96,11 +105,108 @@ module.exports = { // Exporta o módulo como um objeto contendo a função notif
                                     entity: order.biz_content.entity_id, // Entidade do pagamento
                                     validity: moment(order.expires_at).format("YYYY/MM/DD HH:mm") // Data de expiração do pedido
                                 })
+
+                            // Cálculo com variáveis de ambiente
+                            const organizerAmount = order.amount_after_rate * ORGANIZER_PAYOUT;
+                            const platformFee = order.amount_after_rate * PLATFORM_FEE;
+                            const platformProfit = order.amount_after_rate * PLATFORM_PROFIT;
+
+                            // Atualiza o Financial
+                            await Financial.findOneAndUpdate(
+                                {},
+                                {
+                                    $inc: {
+                                        total_earnings: platformFee,
+                                        pending_amount: organizerAmount,
+                                        platform_profit: platformProfit
+                                    }
+                                },
+                                { upsert: true }
+                            );
                         }
                     }
                     break; // Finaliza o processamento do caso "TRADE_FINISHED"
-                case "TRANSFER_SUCCESS":
-                    consoele.log(status, out_trade_no)
+                case "TRANSFER_SUCCESS":  // Caso para tratar transferências bem-sucedidas para organizadores
+                    consoele.log(status, out_trade_no)  
+
+                    // Busca o registro de saque no banco de dados usando o ID da transação
+                    const payout = await Payout.findOne({
+                        id: out_trade_no  // Filtra pelo ID único do saque
+                    }).populate("user").populate("event")
+
+                    // Verifica se o saque foi encontrado
+                    if (payout) {
+                        // Atualiza o status do saque para "a" (aprovado)
+                        await payout.updateOne({
+                            $set: {
+                                status: "a"  // 'a' provavelmente significa "approved" ou "ativo"
+                                // [SUGESTÃO: Usar "approved" para melhor legibilidade]
+                            }
+                        })
+
+                        // Atualiza o registro financeiro geral da plataforma
+                        await Financial.findOneAndUpdate(
+                            {},  // Filtro vazio - atualiza o primeiro/único documento Financial
+                            {
+                                $inc: {  // Operador de incremento/decremento atômico
+                                    total_paid: payout.amount,       // Aumenta o total já pago aos organizadores
+                                    pending_amount: -payout.amount,   // Reduz o valor pendente de pagamento
+                                    // platform_profit não é alterado porque o lucro já foi contabilizado na venda inicial
+                                }
+                            },
+                            { upsert: true }  // Cria o documento se não existir
+                        );
+
+                        // Verifica se o saque está associado a um evento específico
+                        if (payout.event?._id) {
+                            // Atualiza o saldo disponível do evento
+                            await Event.updateOne(
+                                { _id: payout.event._id },  // Filtra pelo ID do evento
+                                {
+                                    $inc: {
+                                        balance: -payout.amount  // Reduz o saldo disponível do evento
+                                    }
+                                }
+                            );
+                        }
+
+                        if (payout?.user?.email) {
+                            sendMail(payout.user.email, 'payout_success',
+                                `Saque processado - ${formatAmount(payout.amount)} disponível em sua conta`, // Assunto do e-mail
+                                { // Dados enviados para o template do e-mail
+                                    id: order.id, // ID do pedido
+                                    userFullName: payout.user.full_name,
+                                    eventName: payout.event?.name || "",
+                                    amount: formatAmount(payout.amount),
+                                    bankName: payout.bank_details.bank_name,
+                                    iban: payout.bank_details.iban,
+                                    accountHolder: payout.bank_details.bank_name,
+                                    dateTransfer: moment().add('1', 'h').format("YYYY/MM/DD HH:mm") // Data e hora do pagamento formatada
+                                })
+                        }
+                    }
+                    break;  // Sai do switch case
+                case 'TRANSFER_FAIL':
+                    const _payout = await Payout.findOne({
+                        id: out_trade_no  // Filtra pelo ID único do saque
+                    }).populate("user").populate("event")
+
+                    if (_payout) {
+                        if (_payout.user?.email) {
+                            sendMail(
+                                _payout.user.email,
+                                'payout_failed',
+                                `Falha no saque de ${formatAmount(_payout.amount)}`,
+                                {
+                                    amount: formatAmount(_payout.amount),
+                                    eventName: _payout.event?.name || "",
+                                    failureReason: "Erro no processamento bancário",
+                                    supportContact: process.env.SUPPORT_EMAIL || "",
+                                    retryDate: moment().add(1, 'day').format("DD/MM/YYYY")
+                                }
+                            );
+                        }
+                    }
                     break;
             }
             return 'success' // Retorna a string 'success' para indicar que a notificação foi processada com sucesso (útil para webhooks)

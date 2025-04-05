@@ -104,7 +104,6 @@ function executePayPayPayment(price, subject, order_id) {
 
     // Converter para string JSON
     const requestBodyString = JSON.stringify(requestBody);
-    console.log(requestBodyString)
 
     // Enviar a solicitação
     axios.post(process.env.API_PAYPAY, requestBodyString, {
@@ -425,7 +424,6 @@ function executePaymentToPayPayAccount(price, payee_identity, order_id) {
 
     // Converter para string JSON
     const requestBodyString = JSON.stringify(requestBody);
-    console.log(requestBodyString)
 
     // Enviar a solicitação
     axios.post(process.env.API_PAYPAY, requestBodyString, {
@@ -441,7 +439,7 @@ function executePaymentToPayPayAccount(price, payee_identity, order_id) {
         });
 }
 
-function executePaymentToBankAccount(price, payee_identity, order_id) {
+function executePaymentToBankAccount(price, bank_details, order_id) {
     function formatToDecimal(value) {
         return value.toFixed(2);
     }
@@ -450,11 +448,11 @@ function executePaymentToBankAccount(price, payee_identity, order_id) {
         out_trade_no: order_id,
         payer_identity_type: "1",
         payer_identity: process.env.PARTENER_ID_PAYPAY,
-        amount: "5.00",
+        amount: formatToDecimal(price),
         currency: "AOA",
-        bank_card_no: "AO06004000001355203810230",
-        bank_account_name: "Domingos Angelino",
-        bank_code: "BAI",
+        bank_card_no: bank_details.iban,
+        bank_account_name: bank_details.account_holder,
+        bank_code: bank_details.bank_name,
         sale_product_code: process.env.SALE_PRODUCT_PAYPAY,
         pay_product_code: "11",
         memo: "Transferencia de conta"
@@ -538,20 +536,13 @@ function executePaymentToBankAccount(price, payee_identity, order_id) {
 
     // Converter para string JSON
     const requestBodyString = JSON.stringify(requestBody);
-    console.log(requestBodyString)
 
     // Enviar a solicitação
-    axios.post(process.env.API_PAYPAY, requestBodyString, {
+    return axios.post(process.env.API_PAYPAY, requestBodyString, {
         headers: {
             'Content-Type': 'application/json',
         },
     })
-        .then(response => {
-            console.log('Response:', response.data);
-        })
-        .catch(error => {
-            console.error('Error:', error.response ? error.response.data : error.message);
-        });
 }
 
 module.exports = {
