@@ -127,7 +127,7 @@ module.exports = { // Exporta o módulo como um objeto contendo a função notif
                     }
                     break; // Finaliza o processamento do caso "TRADE_FINISHED"
                 case "TRANSFER_SUCCESS":  // Caso para tratar transferências bem-sucedidas para organizadores
-                    consoele.log(status, out_trade_no)  
+                    consoele.log(status, out_trade_no)
 
                     // Busca o registro de saque no banco de dados usando o ID da transação
                     const payout = await Payout.findOne({
@@ -193,6 +193,12 @@ module.exports = { // Exporta o módulo como um objeto contendo a função notif
 
                     if (_payout) {
                         if (_payout.user?.email) {
+                            await payout.updateOne({
+                                $set: {
+                                    status: "r"  // 'a' provavelmente significa "approved" ou "ativo"
+                                    // [SUGESTÃO: Usar "approved" para melhor legibilidade]
+                                }
+                            })
                             sendMail(
                                 _payout.user.email,
                                 'payout_failed',
