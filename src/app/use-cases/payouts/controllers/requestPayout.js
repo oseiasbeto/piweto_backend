@@ -89,6 +89,7 @@ module.exports = {
                         res.status(201).send({ message: "Solicitação de saque criada com sucesso!", payout });
                     }
                 } else {
+                    console.log(response)
                     // Se o serviço retornar um erro, retorna mensagem genérica
                     res.status(400).send({
                         message: "Ups! algo deu errado."

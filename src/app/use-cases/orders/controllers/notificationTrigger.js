@@ -20,6 +20,7 @@ module.exports = { // Exporta o módulo como um objeto contendo a função notif
 
             const { status, out_trade_no } = req.body // Desestrutura o corpo da requisição para obter o status da transação e o ID do pedido (out_trade_no)
 
+            console.log(status, out_trade_no)
             switch (status) { // Usa uma estrutura switch para avaliar o valor do status recebido
                 case "TRADE_FINISHED": // Caso o status seja "TRADE_FINISHED", indicando que a transação foi concluída com sucesso
                     const order = await Order.findOne({ // Busca um pedido no banco de dados com o ID (out_trade_no) e status pendente ("p")
