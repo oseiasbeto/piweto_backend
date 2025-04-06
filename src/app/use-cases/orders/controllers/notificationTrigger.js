@@ -131,7 +131,8 @@ module.exports = { // Exporta o módulo como um objeto contendo a função notif
                
                 // Busca o registro de saque no banco de dados usando o ID da transação
                 const payout = await Payout.findOne({
-                    id: out_trade_no  // Filtra pelo ID único do saque
+                    id: out_trade_no,  // Filtra pelo ID único do saque
+                    status: "p"
                 }).populate("user").populate("event")
 
                 // Verifica se o saque foi encontrado
@@ -169,8 +170,6 @@ module.exports = { // Exporta o módulo como um objeto contendo a função notif
                             }
                         );
                     }
-                    console.log(payout?.user?.email)
-                    console.log("Enviando o e-mail")
                     if (payout?.user?.email) {
                         sendMail(payout.user.email, 'payout_success',
                             `Saque processado - ${formatAmount(payout.amount)} disponível em sua conta`, // Assunto do e-mail
@@ -180,7 +179,7 @@ module.exports = { // Exporta o módulo como um objeto contendo a função notif
                                 amount: formatAmount(payout.amount),
                                 bankName: payout.bank_details.bank_name,
                                 iban: payout.bank_details.iban,
-                                accountHolder: payout.bank_details.bank_name,
+                                accountHolder: payout.bank_details.account_holder,
                                 dateTransfer: moment().add('1', 'h').format("YYYY/MM/DD HH:mm") // Data e hora do pagamento formatada
                             })
                     }
