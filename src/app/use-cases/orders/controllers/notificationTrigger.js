@@ -19,7 +19,6 @@ module.exports = { // Exporta o módulo como um objeto contendo a função notif
             const ORGANIZER_PAYOUT = parseFloat(process.env.ORGANIZER_PAYOUT_PERCENTAGE);
 
             const { status, out_trade_no } = req.body // Desestrutura o corpo da requisição para obter o status da transação e o ID do pedido (out_trade_no)
-            console.log(`Console fora do escopo: ${status, out_trade_no}`)
 
             if (status == 'TRADE_FINISHED') {
                 // Caso o status seja "TRADE_FINISHED", indicando que a transação foi concluída com sucesso
@@ -129,14 +128,12 @@ module.exports = { // Exporta o módulo como um objeto contendo a função notif
                 }
             } else if (status === 'TRANSFER_SUCCESS') {
                 // Caso para tratar transferências bem-sucedidas para organizadores
-                console.log(`Console dentro do escopo: ${status, out_trade_no}`)
-
+               
                 // Busca o registro de saque no banco de dados usando o ID da transação
                 const payout = await Payout.findOne({
                     id: out_trade_no  // Filtra pelo ID único do saque
                 }).populate("user").populate("event")
 
-                console.log(payout)
                 // Verifica se o saque foi encontrado
                 if (payout) {
                     // Atualiza o status do saque para "a" (aprovado)
@@ -177,7 +174,6 @@ module.exports = { // Exporta o módulo como um objeto contendo a função notif
                         sendMail(payout.user.email, 'payout_success',
                             `Saque processado - ${formatAmount(payout.amount)} disponível em sua conta`, // Assunto do e-mail
                             { // Dados enviados para o template do e-mail
-                                id: order.id, // ID do pedido
                                 userFullName: payout.user.full_name,
                                 eventName: payout.event?.name || "",
                                 amount: formatAmount(payout.amount),
