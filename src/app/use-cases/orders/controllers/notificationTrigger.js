@@ -169,7 +169,8 @@ module.exports = { // Exporta o módulo como um objeto contendo a função notif
                             }
                         );
                     }
-
+                    console.log(payout?.user?.email)
+                    console.log("Enviando o e-mail")
                     if (payout?.user?.email) {
                         sendMail(payout.user.email, 'payout_success',
                             `Saque processado - ${formatAmount(payout.amount)} disponível em sua conta`, // Assunto do e-mail
