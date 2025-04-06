@@ -136,6 +136,7 @@ module.exports = { // Exporta o módulo como um objeto contendo a função notif
                     status: "p"
                 }).populate("user").populate("event")
 
+                console.log(payout.status)
                 // Verifica se o saque foi encontrado
                 if (payout) {
                     // Atualiza o status do saque para "a" (aprovado)
