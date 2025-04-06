@@ -75,7 +75,7 @@ module.exports = {
                         user: user_id,
                         event: event_id,
                         amount,
-                        status: "p", // 'p' provavelmente significa 'pending' (pendente)
+                        status: "in_transit", // 'in_transit' provavelmente significa 'pending' (pendente)
                         payment_method: "bank_transfer",
                         bank_details: {
                             iban: event.data_bank.iban,
