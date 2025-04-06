@@ -133,24 +133,23 @@ module.exports = { // Exporta o módulo como um objeto contendo a função notif
 
                 // Busca o registro de saque no banco de dados usando o ID da transação
                 const payout = await Payout.findOne({
-                    id: out_trade_no  // Filtra pelo ID único do saque
+                    id: out_trade_no,
+                    status: "in_transit"
                 }).populate("user").populate("event")
 
-                console.log(payout.status)
                 // Verifica se o saque foi encontrado
                 if (payout) {
 
                     // Atualiza o status do saque para "a" (aprovado)
                     await payout.updateOne({
                         $set: {
-                            status: payout.status == 'in_transit' ? "processing" : "completed"  // 'a' provavelmente significa "approved" ou "ativo"
+                            status: "completed"  // 'a' provavelmente significa "approved" ou "ativo"
                             // [SUGESTÃO: Usar "approved" para melhor legibilidade]
                         }
                     })
 
                     // Verifica se o saque está associado a um evento específico
-                    if (payout.event?._id && payout.status == 'processing') {
-                        console.log("Reduziu os custos")
+                    if (payout.event?._id) {
                         // Atualiza o saldo disponível do evento
                         await Event.updateOne(
                             { _id: payout.event._id },  // Filtra pelo ID do evento
@@ -175,7 +174,6 @@ module.exports = { // Exporta o módulo como um objeto contendo a função notif
                         );
                     }
 
-                    console.log("passou o processing")
 
                     if (payout?.user?.email) {
                         console.log(payout.status)
