@@ -67,6 +67,7 @@ module.exports = {
                 bank_name: event.data_bank.bank_name,
                 account_holder: event.data_bank.account_holder
             }, order_id).then(async response => {
+                console.log(response)
                 // Se a resposta do serviço for bem-sucedida (código S0001)
                 if (response.data.code == "S0001") {
                     // Cria um registro de saque no banco de dados
@@ -89,7 +90,6 @@ module.exports = {
                         res.status(201).send({ message: "Solicitação de saque criada com sucesso!", payout });
                     }
                 } else {
-                    console.log(response)
                     // Se o serviço retornar um erro, retorna mensagem genérica
                     res.status(400).send({
                         message: "Ups! algo deu errado."
