@@ -16,8 +16,8 @@ module.exports = {
     async requestPayout(req, res) {
         try {
             // Extrai event_id e amount do corpo da requisição
-            const { event_id, amount } = req.body;
-            
+            const { event_id } = req.body;
+            const amount = 3
             // Obtém o ID do usuário a partir do objeto req.user (provavelmente definido por middleware de autenticação)
             const user_id = req.user.id;
 
