@@ -20,6 +20,8 @@ module.exports = { // Exporta o módulo como um objeto contendo a função notif
 
             const { status, out_trade_no } = req.body // Desestrutura o corpo da requisição para obter o status da transação e o ID do pedido (out_trade_no)
 
+            console.log(status)
+
             if (status == 'TRADE_FINISHED') {
                 // Caso o status seja "TRADE_FINISHED", indicando que a transação foi concluída com sucesso
 
@@ -172,6 +174,8 @@ module.exports = { // Exporta o módulo como um objeto contendo a função notif
                             { upsert: true }  // Cria o documento se não existir
                         );
                     }
+
+                    console.log("passou o processing")
 
                     if (payout?.user?.email) {
                         console.log(payout.status)
