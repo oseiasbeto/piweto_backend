@@ -20,8 +20,6 @@ module.exports = { // Exporta o módulo como um objeto contendo a função notif
 
             const { status, out_trade_no } = req.body // Desestrutura o corpo da requisição para obter o status da transação e o ID do pedido (out_trade_no)
 
-            console.log(status)
-
             if (status == 'TRADE_FINISHED') {
                 // Caso o status seja "TRADE_FINISHED", indicando que a transação foi concluída com sucesso
 
@@ -176,31 +174,16 @@ module.exports = { // Exporta o módulo como um objeto contendo a função notif
 
 
                     if (payout?.user?.email) {
-                        console.log(payout.status)
-
-                        if (payout.status == 'in_transit') {
-                            sendMail(payout.user.email, 'payout_processing', 'Seu saque está em processamento - Piweto', // Assunto do e-mail
-                                { // Dados enviados para o template do e-mail
-                                    userFullName: payout.user.full_name,
-                                    eventName: payout.event?.name || "",
-                                    amount: formatAmount(payout.amount),
-                                    bankName: payout.bank_details.bank_name,
-                                    iban: payout.bank_details.iban,
-                                    accountHolder: payout.bank_details.account_holder,
-                                    dateTransfer: moment().add('1', 'h').format("YYYY/MM/DD HH:mm") // Data e hora do pagamento formatada
-                                })
-                        } else {
-                            sendMail(payout.user.email, 'payout_success', `Saque processado - ${formatAmount(payout.amount)} disponível em sua conta`, // Assunto do e-mail
-                                { // Dados enviados para o template do e-mail
-                                    userFullName: payout.user.full_name,
-                                    eventName: payout.event?.name || "",
-                                    amount: formatAmount(payout.amount),
-                                    bankName: payout.bank_details.bank_name,
-                                    iban: payout.bank_details.iban,
-                                    accountHolder: payout.bank_details.account_holder,
-                                    dateTransfer: moment().add('1', 'h').format("YYYY/MM/DD HH:mm") // Data e hora do pagamento formatada
-                                })
-                        }
+                        sendMail(payout.user.email, 'payout_success', `Saque processado - ${formatAmount(payout.amount)}`, // Assunto do e-mail
+                            { // Dados enviados para o template do e-mail
+                                userFullName: payout.user.full_name,
+                                eventName: payout.event?.name || "",
+                                amount: formatAmount(payout.amount),
+                                bankName: payout.bank_details.bank_name,
+                                iban: payout.bank_details.iban,
+                                accountHolder: payout.bank_details.account_holder,
+                                dateTransfer: moment().add('1', 'h').format("YYYY/MM/DD HH:mm") // Data e hora do pagamento formatada
+                            })
                     }
                 }
             } else if (status === 'TRANSFER_FAIL') {
