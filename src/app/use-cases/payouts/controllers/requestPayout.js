@@ -62,7 +62,8 @@ module.exports = {
             const order_id = `${Date.now()}${Math.floor(Math.random() * 10000)}`
 
             // Executa o pagamento para a conta bancária usando o serviço PayPay
-            await executePaymentToBankAccount(amount, {
+
+            await executePaymentToBankAccount(Number(amount), {
                 iban: event.data_bank.iban,
                 bank_name: event.data_bank.bank_name,
                 account_holder: event.data_bank.account_holder
@@ -91,7 +92,7 @@ module.exports = {
                 } else {
                     // Se o serviço retornar um erro, retorna mensagem genérica
                     res.status(400).send({
-                        message: "Ups! algo deu errado."
+                        message: "Saque não processado. Verifique os dados bancários."
                     })
                 }
             })

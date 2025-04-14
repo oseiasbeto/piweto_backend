@@ -440,6 +440,7 @@ function executePaymentToPayPayAccount(price, payee_identity, order_id) {
 }
 
 function executePaymentToBankAccount(price, bank_details, order_id) {
+    console.log(price)
     function formatToDecimal(value) {
         return value.toFixed(2);
     }
@@ -448,7 +449,7 @@ function executePaymentToBankAccount(price, bank_details, order_id) {
         out_trade_no: order_id,
         payer_identity_type: "1",
         payer_identity: process.env.PARTENER_ID_PAYPAY,
-        amount: formatToDecimal(price),
+        amount: formatToDecimal(Number(price)),
         currency: "AOA",
         bank_card_no: bank_details.iban,
         bank_account_name: bank_details.account_holder,
