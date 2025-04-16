@@ -8,7 +8,7 @@ const sendMessage = require('../../../services/sendMessage') // Importa função
 const formatAmount = require("../../../utils/formatAmount") // Importa função utilitária para formatar valores monetários
 const getTotalTicketsSelected = require("../../../utils/getTotalTicketsSelected") // Importa função para calcular total de ingressos selecionados
 const { redis } = require('../../../redisClient'); // Importa cliente Redis para caching
-const { executeReferencePayment } = require("../../../services/paypay") // Importa função para processar pagamentos por referência
+const { executeReferencePayment, executeMulPayment } = require("../../../services/paypay") // Importa função para processar pagamentos por referência
 const moment = require('moment') // Importa biblioteca Moment.js para manipulação de datas
 
 module.exports = { // Exporta o módulo com a função createOrder
@@ -167,7 +167,6 @@ module.exports = { // Exporta o módulo com a função createOrder
                     } else { // Se o valor do carrinho for maior que zero (pedido pago)
                         switch (payment_method) { // Verifica o método de pagamento
                             case "reference": // Caso o método seja pagamento por referência
-
                                 const data = { // Dados para o processamento do pagamento
                                     price: amount,
                                     subject: `Adquira ingressos para o evento: ${event.name}`,
@@ -256,7 +255,7 @@ module.exports = { // Exporta o módulo com a função createOrder
                                             if (newOrder?.data?.phone.length) {
                                                 sendMessage(newOrder.data.phone, `Adquira os teus ingressos pela Entidate: ${newOrder.biz_content.entity_id} Referencia: ${newOrder.biz_content.reference_id} Montante: ${formatAmount(newOrder.amount)}`)
                                             }
-                                            
+
                                             await event.updateOne({ // Atualiza o evento
                                                 $inc: {
                                                     tickets_available_count: -Number(total_tickets_selected),
@@ -275,6 +274,98 @@ module.exports = { // Exporta o módulo com a função createOrder
                                     }
                                 })
                                 break; // Finaliza o caso "reference"
+                            case "mul":
+
+                                const data_mul = { // Dados para o processamento do pagamento
+                                    price: amount,
+                                    subject: `Adquira ingressos para o evento: ${event.name}`,
+                                    order_id,
+                                    phone_num: phone.replace(/\s+/g, ""),
+                                    quantity: total_tickets_selected,
+                                    timeout_express: '15m'
+                                }
+
+                                await executeMulPayment(data_mul).then(async (response) => { // Executa o pagamento
+                                    if (response.data.code == "S0001") { // Se o pagamento for bem-sucedido
+
+                                        const newOrder = await Order.create({ // Cria o pedido no banco
+                                            id: order_id,
+                                            batches: batches,
+                                            rate: amount > 0 ? rate : 0,
+                                            event: event._id,
+                                            reservation_number,
+                                            expires_at: moment().add(30, 'minutes'), // Expira em 30 minutos
+                                            coupon: cart.coupon,
+                                            status: 'p', // Status pendente
+                                            amount,
+                                            total_tickets_selected,
+                                            amount_after_discount,
+                                            amount_after_rate,
+                                            biz_content: response.data ? response.data.biz_content : null, // Dados do pagamento
+                                            data: {
+                                                full_name,
+                                                email,
+                                                phone,
+                                                payment_method
+                                            }
+                                        })
+
+                                        if (newOrder) { // Se o pedido foi criado
+
+                                            batches.map(async (b) => { // Cria ingressos para cada lote
+                                                for (let i = 0; i < b.quantitySelected; i++) {
+                                                    await Ticket.create({
+                                                        id: Date.now(),
+                                                        name: b.name,
+                                                        booking_number: newOrder.reservation_number,
+                                                        type: b.type,
+                                                        order: newOrder._id,
+                                                        batch: b._id,
+                                                        price: b.price,
+                                                        code: code_ticket,
+                                                        tags: [
+                                                            user.full_name,
+                                                            event.name,
+                                                            user.email,
+                                                            code_ticket,
+                                                            newOrder.id,
+                                                        ],
+                                                        costumer: user._id,
+                                                        description: b.description,
+                                                        event: event._id,
+                                                    })
+
+                                                    await Batch.updateOne({ // Atualiza quantidade no lote
+                                                        _id: b._id
+                                                    }, {
+                                                        $inc: {
+                                                            quantity: - b.quantitySelected
+                                                        }
+                                                    })
+                                                }
+                                            })
+
+                                            const EXPIRATION_TIME = 1800; // Define tempo de expiração no Redis (30 minutos)
+                                            await redis.set(`pedido:${order_id}`, 'pending', { EX: EXPIRATION_TIME }); // Armazena status no Redis
+
+                                            await event.updateOne({ // Atualiza o evento
+                                                $inc: {
+                                                    tickets_available_count: -Number(total_tickets_selected),
+                                                    orders_pending_cash: Number(newOrder.amount_after_rate)
+                                                }
+                                            })
+                                            res.status(200).send({ // Retorna sucesso com o pedido criado
+                                                newOrder,
+                                                message: "Boa! a sua reserva foi criada com sucesso."
+                                            })
+                                        }
+                                    } else { // Se o pagamento falhar
+                                        res.status(400).send({
+                                            message: "Ups! algo deu errado."
+                                        })
+                                    }
+                                })
+                                break;
                         }
                     }
                 }
