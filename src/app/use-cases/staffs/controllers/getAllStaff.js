@@ -29,6 +29,7 @@ module.exports = {
                 .skip(skip)
                 .limit(Number(limit))
                 .populate("event")
+                .populate("member", "full_name")
 
             let metadata;
             if (req.query.page && staffs.length) {

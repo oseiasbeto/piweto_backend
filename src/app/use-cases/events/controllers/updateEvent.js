@@ -82,8 +82,6 @@ module.exports = {
                     }
                 }
 
-                console.log(cover)
-
                 await event.updateOne({
                     $set: {
                         name: name ? name : event.name,
@@ -97,7 +95,7 @@ module.exports = {
                             account_holder: account_holder ? account_holder : event.data_bank.account_holder
                         },
                         visibility: visibility ? visibility : event.visibility,
-                        slug: name ? `${generateSlugName(name)}_${Math.floor(Math.random() * 10000)}` : event.slug,
+                        slug: name !== event.name ? `${generateSlugName(name)}_${Math.floor(Math.random() * 10000)}` : event.slug,
                         tags: name ? [...event.tags, name] : event.tags,
                         description: description ? description : event.description,
                         starts_at: starts_at ? starts_at : event.starts_at,

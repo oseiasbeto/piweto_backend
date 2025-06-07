@@ -13,6 +13,7 @@ module.exports = {
                 slug,
                 status: "a"
             })
+                .populate('created_by', '-password')
 
             if (!event) return res.status(404).send({
                 message: "Ups! nao achamos nenhum evento activo com este slug."
