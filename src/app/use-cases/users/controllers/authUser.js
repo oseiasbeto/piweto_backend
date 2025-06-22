@@ -43,7 +43,7 @@ module.exports = {
                 throw new Error("Configuração de tokens JWT incompleta.");
             }
 
-            const expires_access_token_in = "30d";
+            const expires_access_token_in = "7d";
             const expires_refresh_token_in = "1y";
 
             const access_token = generateAccessToken(user, expires_access_token_in);
