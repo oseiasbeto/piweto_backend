@@ -14,6 +14,7 @@ module.exports = {
   async notificationTrigger(req, res) {
     // Define uma função assíncrona que processa notificações de status (ex.: de um gateway de pagamento)
     try {
+      console.log("Chegou a notificacao....");
       // Inicia um bloco try-catch para capturar e tratar erros durante a execução
       const { status, out_trade_no } = req.body; // Desestrutura o corpo da requisição para obter o status da transação e o ID do pedido (out_trade_no)
 
