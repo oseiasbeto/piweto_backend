@@ -12,8 +12,8 @@ const { notificationTrigger } = require("./controllers/notificationTrigger")
 
 // configurando as rotas
 router.post("/notification-trigger", notificationTrigger)
-router.post("/:event_id", protectedRoute, createOrder)
-router.get("/:id", protectedRoute, getOrderById)
+router.post("/:event_id", createOrder)
+router.get("/:id", getOrderById)
 
 
 // exportando as rotas

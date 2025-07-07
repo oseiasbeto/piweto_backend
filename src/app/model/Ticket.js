@@ -58,8 +58,7 @@ const ticket = new mongoose.Schema({
         required: true
     },
     costumer: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        type: Object,
         required: true
     },
     status: {
