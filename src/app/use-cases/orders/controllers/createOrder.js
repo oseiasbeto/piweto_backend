@@ -76,8 +76,8 @@ module.exports = {
           // Se todas as validações iniciais passaram
           let // Declara variáveis locais
             batches = [],
-            amount = cart.amount,
             amount_after_discount = cart.amount_after_discount,
+            amount = cart.amount,
             rate_amount = 0,
             amount_after_rate = 0,
             total_tickets_selected = 0;
@@ -85,9 +85,13 @@ module.exports = {
           const rate = Number(process.env.RATE_SALE || 4); // Define taxa de venda (padrão 4%) a partir de variável de ambiente
 
           if (amount > 0) {
+            const real_amount =
+              cart?.coupon?._id && amount_after_discount > 0
+                ? amount_after_discount
+                : amount; // Se houver cupom, usa o valor após desconto, caso contrário, usa o valor total
             // Se o valor do pedido for maior que zero
-            rate_amount = (amount * rate) / 100; // Calcula a taxa aplicada ao valor
-            amount_after_rate = amount - rate_amount; // Calcula valor final após a taxa
+            rate_amount = (real_amount * rate) / 100; // Calcula a taxa aplicada ao valor
+            amount_after_rate = real_amount - rate_amount; // Calcula valor final após a taxa
           }
 
           if (cart.batches.length) {
@@ -180,8 +184,9 @@ module.exports = {
                     ],
                     code: code_ticket,
                     costumer: {
-                      email: email,
-                      phone: phone,
+                      full_name,
+                      email,
+                      phone
                     },
                     description: b.description,
                     event: event._id,
@@ -282,8 +287,9 @@ module.exports = {
                               newOrder.id,
                             ],
                             costumer: {
-                              email: email,
-                              phone: phone,
+                              full_name,
+                              email,
+                              phone
                             },
                             description: b.description,
                             event: event._id,
@@ -433,8 +439,9 @@ module.exports = {
                               newOrder.id,
                             ],
                             costumer: {
-                              email: email,
-                              phone: phone,
+                              full_name,
+                              email,
+                              phone
                             },
                             description: b.description,
                             event: event._id,
@@ -547,8 +554,9 @@ module.exports = {
                                 newOrder.id,
                               ],
                               costumer: {
-                                email: email,
-                                phone: phone,
+                                full_name,
+                                email,
+                                phone
                               },
                               description: b.description,
                               event: event._id,

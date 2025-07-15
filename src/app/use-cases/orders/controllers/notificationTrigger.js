@@ -5,7 +5,8 @@ const sendMail = require("../../../mail/sendMail"); // Importa função reutiliz
 const moment = require("moment"); // Importa a biblioteca Moment.js para facilitar manipulação e formatação de datas
 const Event = require("../../../model/Event"); // Importa o modelo Event para manipular dados de eventos no MongoDB
 const Payout = require("../../../model/Payout");
-
+const generateTicketsPDF = require("../../../utils/generateTicketsPDF"); // Importa função para gerar PDF de ingressos
+const fs = require("fs");
 const formatAmount = require("../../../utils/formatAmount"); // Importa função utilitária para formatar valores monetários (ex.: adicionar moeda ou casas decimais)
 require("dotenv").config(); // Carrega variáveis do .env
 
@@ -14,7 +15,6 @@ module.exports = {
   async notificationTrigger(req, res) {
     // Define uma função assíncrona que processa notificações de status (ex.: de um gateway de pagamento)
     try {
-      console.log("Chegou a notificacao....");
       // Inicia um bloco try-catch para capturar e tratar erros durante a execução
       const { status, out_trade_no } = req.body; // Desestrutura o corpo da requisição para obter o status da transação e o ID do pedido (out_trade_no)
 
@@ -85,26 +85,61 @@ module.exports = {
 
           await redis.del(`pedido:${order.id}`); // Remove a entrada do pedido do cache Redis, pois ele foi concluído e não precisa mais ser rastreado
 
+          const tickets = await Ticket.find({
+            order: order._id,
+          }).populate("batch", "name");
+
           if (order?.data?.email) {
-            // Verifica se o pedido possui um e-mail associado no campo data
-            sendMail(
-              order.data.email,
-              "payment-confirmed", // Envia um e-mail de confirmação de pagamento ao comprador
-              `Confirmação de Pagamento - Pedido: ${order.id}, Evento: ${event.name}`, // Assunto do e-mail
-              {
-                // Dados enviados para o template do e-mail
-                id: order.id, // ID do pedido
-                eventName: event.name, // Nome do evento
-                userFullName: order.data.full_name, // Nome completo do comprador
-                ticketQuantity: order.total_tickets_selected, // Quantidade de ingressos comprados
-                reservationNumber: order.reservation_number, // Número de reserva do pedido
-                ticketsUrl: process.env.CLIENT_URL + `meus-ingressos`, // URL para o comprador acessar seus ingressos
-                amount: formatAmount(order.amount), // Valor total formatado
-                reference: order.biz_content.reference_id, // Referência do pagamento
-                entity: order.biz_content.entity_id, // Entidade do pagamento (ex.: banco)
-                datePayment: moment().add("1", "h").format("YYYY/MM/DD HH:mm"), // Data e hora do pagamento formatada
-              }
-            );
+            try {
+              // Gerar PDF com múltiplos ingressos
+              const ticketFiles = await generateTicketsPDF(
+                order,
+                tickets,
+                event
+              );
+
+              const emailData = {
+                id: order.id,
+                eventName: event.name,
+                userFullName: order.data.full_name,
+                ticketQuantity: order.total_tickets_selected,
+                reservationNumber: order.reservation_number,
+                ticketsUrl: `${process.env.CLIENT_URL}meus-ingressos`,
+                amount: formatAmount(order.amount),
+                reference: order.biz_content.reference_id,
+                entity: order.biz_content.entity_id,
+                datePayment: moment().add(1, "h").format("YYYY/MM/DD HH:mm"),
+              };
+
+              // Preparar anexos para o e-mail
+              const attachments = ticketFiles.map((file) => ({
+                filename: file.fileName,
+                path: file.filePath,
+                contentType: "application/pdf",
+              }));
+
+              // Verifica se o pedido possui um e-mail associado no campo data
+              await sendMail(
+                order.data.email,
+                "payment-confirmed", // Envia um e-mail de confirmação de pagamento ao comprador
+                `Confirmação de Pagamento - Pedido: ${order.id}, Evento: ${event.name}`, // Assunto do e-mail
+                {...emailData},
+                attachments
+              );
+              // Limpeza dos arquivos temporários
+              // Limpeza dos arquivos temporários - DEPOIS do envio
+              ticketFiles.forEach((file) => {
+                try {
+                  if (fs.existsSync(file.filePath)) {
+                    fs.unlinkSync(file.filePath);;
+                  }
+                } catch (e) {
+                  console.error(`Erro ao remover ${file.filePath}:`, e.message);
+                }
+              });
+            } catch (error) {
+              console.error("Erro ao gerar PDF dos ingressos:", error);
+            }
           }
 
           if (event?.created_by?.email) {

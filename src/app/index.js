@@ -35,6 +35,7 @@ const orders = require("./use-cases/orders/orders.routes")
 const staffs = require("./use-cases/staffs/staffs.routes")
 const batches = require("./use-cases/batches/batches.routes")
 const tickets = require("./use-cases/tickets/tickets.routes")
+const coupons = require("./use-cases/coupons/coupons.routes")
 const payouts = require("./use-cases/payouts/payouts.routes")
 
 // Registrando as rotas no aplicativo
@@ -44,6 +45,7 @@ app.use("/v1/orders", orders) // Rotas relacionadas a pedidos
 app.use("/v1/staffs", staffs) // Rotas relacionadas a equipe/administração
 app.use("/v1/batches", batches) // Rotas relacionadas a lotes de ingressos
 app.use("/v1/tickets", tickets) // Rotas relacionadas a ingressos
+app.use("/v1/coupons", coupons) 
 app.use("/v1/payouts", payouts) // Rotas relacionadas a pagamentos
 
 // Rota de boas-vindas
