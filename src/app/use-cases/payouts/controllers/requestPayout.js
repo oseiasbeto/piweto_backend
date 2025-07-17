@@ -8,61 +8,75 @@ const Event = require("../../../model/Event");
 const User = require("../../../model/User");
 
 // Importa a função executePaymentToBankAccount de um serviço externo (PayPay) para processar pagamentos
-const { executePaymentToBankAccount } = require("../../../services/paypay")
+const { executePaymentToBankAccount } = require("../../../services/paypay");
+
+const sendMail = require("../../../mail/sendMail"); // Importa função reutilizável para enviar e-mails aos usuários
 
 // Exporta um objeto com a função requestPayout que será usada como rota/controller
 module.exports = {
-    // Função assíncrona para lidar com solicitações de saque
-    async requestPayout(req, res) {
-        try {
-            // Extrai event_id e amount do corpo da requisição
-            const { event_id, amount } = req.body;
-            
-            // Obtém o ID do usuário a partir do objeto req.user (provavelmente definido por middleware de autenticação)
-            const user_id = req.user.id;
+  // Função assíncrona para lidar com solicitações de saque
+  async requestPayout(req, res) {
+    try {
+      // Extrai event_id e amount do corpo da requisição
+      const { event_id, amount } = req.body;
 
-            // Verifica se event_id e amount foram fornecidos
-            if (!event_id || !amount) {
-                // Retorna erro 400 se faltar algum campo obrigatório
-                return res.status(400).send({ message: "Evento e valor são obrigatórios." });
-            }
+      // Obtém o ID do usuário a partir do objeto req.user (provavelmente definido por middleware de autenticação)
+      const user_id = req.user.id;
 
-            // Busca o evento no banco de dados verificando se pertence ao usuário
-            const event = await Event.findOne({ _id: event_id, created_by: user_id });
+      // Verifica se event_id e amount foram fornecidos
+      if (!event_id || !amount) {
+        // Retorna erro 400 se faltar algum campo obrigatório
+        return res
+          .status(400)
+          .send({ message: "Evento e valor são obrigatórios." });
+      }
 
-            // Se o evento não for encontrado ou não pertencer ao usuário
-            if (!event) {
-                return res.status(404).send({ message: "Evento não encontrado ou você não tem permissão." });
-            }
+      // Busca o evento no banco de dados verificando se pertence ao usuário
+      const event = await Event.findOne({ _id: event_id, created_by: user_id });
 
-            // Busca o usuário no banco de dados
-            const user = await User.findOne({
-                _id: user_id
-            })
+      // Se o evento não for encontrado ou não pertencer ao usuário
+      if (!event) {
+        return res.status(404).send({
+          message: "Evento não encontrado ou você não tem permissão.",
+        });
+      }
 
-            // Se o usuário não for encontrado (situação inesperada já que o middleware de autenticação deveria ter verificado)
-            if (!user) {
-                return res.status(404).send({ message: "Algo deu errado!" });
-            }
+      // Busca o usuário no banco de dados
+      const user = await User.findOne({
+        _id: user_id,
+      });
 
-            // Verifica se o saldo do evento é suficiente para o saque
-            if (event.balance < amount) {
-                return res.status(400).send({ message: "Saldo insuficiente para saque." });
-            }
+      // Se o usuário não for encontrado (situação inesperada já que o middleware de autenticação deveria ter verificado)
+      if (!user) {
+        return res.status(404).send({ message: "Algo deu errado!" });
+      }
 
-            // Verifica se já existe um saque pendente para este evento
-            const existingPayout = await Payout.findOne({ event: event_id, status: "pending" });
+      // Verifica se o saldo do evento é suficiente para o saque
+      if (event.balance < amount) {
+        return res
+          .status(400)
+          .send({ message: "Saldo insuficiente para saque." });
+      }
 
-            // Se existir um saque pendente, retorna erro
-            if (existingPayout) {
-                return res.status(400).send({ message: "Já existe um saque pendente para este evento." });
-            }
+      // Verifica se já existe um saque pendente para este evento
+      const existingPayout = await Payout.findOne({
+        event: event_id,
+        status: "pending",
+      });
 
-            // Gera um order_id único usando timestamp e um número aleatório
-            const order_id = `${Date.now()}${Math.floor(Math.random() * 10000)}`
+      // Se existir um saque pendente, retorna erro
+      if (existingPayout) {
+        return res
+          .status(400)
+          .send({ message: "Já existe um saque pendente para este evento." });
+      }
 
-            // Executa o pagamento para a conta bancária usando o serviço PayPay
+      // Gera um order_id único usando timestamp e um número aleatório
+      const order_id = `${Date.now()}${Math.floor(Math.random() * 10000)}`;
 
+      // Executa o pagamento para a conta bancária usando o serviço PayPay
+
+      /* 
             await executePaymentToBankAccount(Number(amount), {
                 iban: event.data_bank.iban,
                 bank_name: event.data_bank.bank_name,
@@ -95,11 +109,50 @@ module.exports = {
                         message: "Saque não processado. Verifique os dados bancários."
                     })
                 }
-            })
-        } catch (err) {
-            console.log(err)
-            // Captura qualquer erro não tratado e retorna erro 500
-            res.status(500).send({ message: err.message });
-        }
+            })*/
+
+      // Cria um registro de saque no banco de dados
+      const payout = await Payout.create({
+        id: order_id,
+        user: user_id,
+        event: event_id,
+        amount,
+        status: "in_transit", // 'in_transit' provavelmente significa 'pending' (pendente)
+        payment_method: "bank_transfer",
+        bank_details: {
+          iban: event.data_bank.iban,
+          bank_name: event.data_bank.bank_name,
+          account_holder: event.data_bank.account_holder,
+        },
+      });
+
+      // Se o saque foi criado com sucesso, retorna sucesso
+      if (payout) {
+        sendMail(
+          "oseiasbetodev@gmail.com", // Email da equipe (diferente do exemplo anterior que era para o usuário)
+          "payout-request", // Identificador do template
+          `Solicitação de Saque - ${payout.event?.name || "Evento sem nome"}`, // Assunto do e-mail
+          {
+            // Dados enviados para o template do e-mail
+            account_holder: payout.bank_details.account_holder,
+            bank_name: payout.bank_details.bank_name,
+            iban: payout.bank_details.iban,
+            user: payout.user.id,
+            event: payout.event?.id || "",
+            eventName: payout.event?.name || "Evento sem nome",
+            currentDate: moment().format("YYYY/MM/DD HH:mm"),
+            // adminDashboardUrl: `https://admin.piweto.it.ao/payouts/${payout.id}`,
+          }
+        );
+        res.status(201).send({
+          message: "Solicitação de saque criada com sucesso!",
+          payout,
+        });
+      }
+    } catch (err) {
+      console.log(err);
+      // Captura qualquer erro não tratado e retorna erro 500
+      res.status(500).send({ message: err.message });
     }
-}
+  },
+};

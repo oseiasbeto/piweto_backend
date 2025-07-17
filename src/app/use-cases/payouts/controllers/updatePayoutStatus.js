@@ -6,7 +6,7 @@ const formatAmount = require("../../../utils/formatAmount")
 module.exports = {
     async updatePayoutStatus(req, res) {
         try {
-            const { status } = req.body;
+            const { status, failureReason } = req.body;
             const { payout_id } = req.params;
 
             if (!payout_id || !status) {
@@ -40,6 +40,9 @@ module.exports = {
                 await sendMail(payout.user.email, emailTemplate, emailSubject, {
                     user_name: payout.user.full_name,
                     amount: formatAmount(payout.amount),
+                    ...(failureReason && {
+                        failureReason
+                    }),
                     status
                 });
             }

@@ -10,8 +10,7 @@ module.exports = {
             })
 
             const event = await Event.findOne({
-                slug,
-                status: "a"
+                slug
             })
                 .populate('created_by', '-password')
 

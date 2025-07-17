@@ -1,4 +1,5 @@
 const mongoose = require("mongoose")
+const mongoosePaginate = require("mongoose-paginate-v2");
 
 const ticket = new mongoose.Schema({
     id: {
@@ -69,5 +70,7 @@ const ticket = new mongoose.Schema({
 }, {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 })
+
+ticket.plugin(mongoosePaginate);
 
 module.exports = mongoose.model("Ticket", ticket);

@@ -1,83 +1,57 @@
 <!DOCTYPE html>
 <html lang="pt">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confirmação de Pagamento - {{eventName}}</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ingressos Confirmados - {{eventName}}</title>
 </head>
+<body style="margin:0; padding:0; background-color:#f4f4f4; font-family:Arial, sans-serif; color:#444;">
+  <table role="presentation" style="max-width:600px; width:100%; margin:0 auto; background:#ffffff; border-radius:8px; overflow:hidden;">
+    
+    <!-- Header -->
+    <tr>
+      <td style="padding:20px; border-bottom:1px solid #eee;">
+        <img src="https://i.ibb.co/hXqY4rQ/piweto.png" alt="Piweto" style="width:120px;">
+      </td>
+    </tr>
 
-<body
-    style="font-family: Arial, sans-serif; background-color: #f4f4f4; color: #444444; margin: 0; padding: 0; line-height: 1.5;">
+    <!-- Content -->
+    <tr>
+      <td style="padding:20px;">
+        <h2 style="font-size:20px; margin-top:0;">Obrigado, {{userFullName}}! 🎉</h2>
 
-    <table
-        style="max-width: 600px; width: 100%; margin: 0 auto; background-color: #ffffff; border: 1px solid #ddd; overflow: hidden; border-radius: 6px;"
-        role="presentation">
-        <!-- Header -->
-        <tr>
-            <td style="text-align: left; padding: 20px; border-bottom: 1px solid #ddd;">
-                <img src="https://i.ibb.co/hXqY4rQ/piweto.png" alt="Logotipo" style="width: 120px; max-width: 100%;">
-            </td>
-        </tr>
+        <p style="font-size:14px; line-height:1.6;">
+          A tua compra para o evento <strong>{{eventName}}</strong> foi confirmada com sucesso.
+        </p>
 
-        <!-- Body -->
-        <tr>
-            <td style="padding: 20px; text-align: left; color: #444444;">
-                <h1 style="font-size: 20px; margin-bottom: 10px; color: #444444;">Olá, {{userFullName}}!</h1>
-                <p style="font-size: 14px; line-height: 1.5; color: #444444;">
-                    O pagamento da sua reserva para o evento <strong>{{eventName}}</strong> foi confirmado com sucesso!
-                    🎉
-                </p>
+        <p style="font-size:14px; line-height:1.6;">
+          Os teus <strong>bilhetes</strong> estão anexados a este e-mail. Podes apresentá-los diretamente no teu telemóvel ou imprimir.
+        </p>
 
-                <p style="font-size: 14px; line-height: 1.5; color: #444444;">
-                    Aqui estão os detalhes da sua compra:
-                </p>
+        <p style="font-size:14px; line-height:1.6;">
+          Caso prefiras, também podes acessá-los pela tua conta clicando no botão abaixo:
+        </p>
 
-                <!-- Informações do pedido -->
-                <ul style="font-size: 14px; color: #444444; line-height: 1.5;">
-                    <li style="font-size: 14px; line-height: 1.5; color: #444444;"><strong>Pedido:</strong> {{id}}</li>
-                    <li style="font-size: 14px; line-height: 1.5; color: #444444;"><strong>Quantidade de
-                            Ingressos:</strong> {{ticketQuantity}}</li>
-                    <li style="font-size: 14px; line-height: 1.5; color: #444444;"><strong>Nº Reserva:</strong>
-                        {{reservationNumber}}</li>
-                    <li style="font-size: 14px; line-height: 1.5; color: #444444;"><strong>Montante:</strong> {{amount}}
-                    </li>
-                    <li style="font-size: 14px; line-height: 1.5; color: #444444;"><strong>Referência:</strong>
-                        {{reference}}</li>
-                    <li style="font-size: 14px; line-height: 1.5; color: #444444;"><strong>Entidade:</strong> {{entity}}
-                    </li>
-                    <li style="font-size: 14px; line-height: 1.5; color: #444444;"><strong>Data do pagamento:</strong>
-                        {{datePayment}}</li>
-                </ul>
+        <!-- Botão -->
+        <div style="text-align:center; margin:30px 0;">
+          <a href="{{ticketsUrl}}" style="background-color:#32bb78; color:#fff; text-decoration:none; padding:12px 24px; border-radius:6px; font-weight:bold; font-size:14px;">
+            Ver Meus Ingressos
+          </a>
+        </div>
 
-                <p style="font-size: 14px; line-height: 1.5; color: #444444;">
-                    Agora, seus ingressos já estão disponíveis na sua conta. Clique no botão abaixo para acessá-los:
-                </p>
+        <p style="font-size:13px; color:#777; margin-top:30px;">
+          Se tiveres dúvidas, estamos aqui para te ajudar. Responde a este e-mail ou entra em contacto pelo nosso suporte.
+        </p>
+      </td>
+    </tr>
 
-                <!-- Botão para ver ingressos -->
-                <div style="text-align: center; margin: 20px 0;">
-                    <a href="{{ticketsUrl}}"
-                        style="background-color: #007bff; color: #ffffff; text-decoration: none; padding: 12px 20px; font-weight: 600; border-radius: 6px; font-size: 14px; display: inline-block;">
-                        😍 Ver Meus Ingressos
-                    </a>
-                </div>
-
-                <p style="font-size: 14px; line-height: 1.5; color: #444444;">
-                    Se tiver alguma dúvida, entre em contato com nossa equipe de suporte.
-                </p>
-            </td>
-        </tr>
-
-        <!-- Footer -->
-        <tr>
-            <td style="text-align: center; padding: 20px; background-color: #f8f8f8; font-size: 14px; color: #888888;">
-                <p style="margin: 10px 0;">&copy; 2025 Piweto. Todos os direitos reservados.</p>
-                <p style="margin: 10px 0;">Se você não realizou esta compra, por favor, entre em contato com o suporte.
-                </p>
-            </td>
-        </tr>
-    </table>
-
+    <!-- Footer -->
+    <tr>
+      <td style="padding:20px; text-align:center; background-color:#f9f9f9; font-size:12px; color:#999;">
+        <p style="margin:5px 0;">&copy; 2025 Piweto</p>
+        <p style="margin:5px 0;">Este e-mail foi enviado automaticamente. Se não reconheces esta compra, contacta-nos imediatamente.</p>
+      </td>
+    </tr>
+  </table>
 </body>
-
 </html>

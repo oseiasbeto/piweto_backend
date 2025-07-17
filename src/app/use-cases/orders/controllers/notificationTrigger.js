@@ -27,6 +27,7 @@ module.exports = {
           status: "p",
         });
         if (order) {
+          console.log("processando o pedido")
           // Verifica se o pedido foi encontrado; se sim, prossegue com o processamento
           const event = await Event.findOne({
             // Busca o evento associado ao pedido pelo ID do evento, populando o campo 'created_by' com dados do organizador

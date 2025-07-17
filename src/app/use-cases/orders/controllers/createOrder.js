@@ -186,7 +186,7 @@ module.exports = {
                     costumer: {
                       full_name,
                       email,
-                      phone
+                      phone,
                     },
                     description: b.description,
                     event: event._id,
@@ -289,7 +289,7 @@ module.exports = {
                             costumer: {
                               full_name,
                               email,
-                              phone
+                              phone,
                             },
                             description: b.description,
                             event: event._id,
@@ -337,7 +337,6 @@ module.exports = {
                       }
 
                       // Envia mensagem (ex.: SMS) com detalhes do pagamento
-                      /* 
                       if (newOrder?.data?.phone.length) {
                         sendMessage(
                           newOrder.data.phone,
@@ -348,7 +347,6 @@ module.exports = {
                           } Montante: ${formatAmount(newOrder.amount)}`
                         );
                       }
-                      */
 
                       await event.updateOne({
                         // Atualiza o evento
@@ -441,7 +439,7 @@ module.exports = {
                             costumer: {
                               full_name,
                               email,
-                              phone
+                              phone,
                             },
                             description: b.description,
                             event: event._id,
@@ -556,7 +554,7 @@ module.exports = {
                               costumer: {
                                 full_name,
                                 email,
-                                phone
+                                phone,
                               },
                               description: b.description,
                               event: event._id,
