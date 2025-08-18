@@ -5,6 +5,10 @@ const order = new mongoose.Schema({
         type: String,
         required: true
     },
+    pin: {
+        type: String,
+        default: null
+    },
     batches: {
         type: Array,
         required: true

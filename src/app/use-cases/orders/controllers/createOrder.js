@@ -3,7 +3,7 @@ const Order = require("../../../model/Order"); // Importa o modelo Order para ma
 const Ticket = require("../../../model/Ticket"); // Importa o modelo Ticket para manipular dados de ingressos
 const Batch = require("../../../model/Batch"); // Importa o modelo Batch para manipular dados de lotes de ingressos
 const sendMail = require("../../../mail/sendMail"); // Importa função para enviar e-mails
-const sendMessage = require("../../../services/sendMessage"); // Importa função para enviar mensagens (ex.: SMS)
+//const sendMessage = require("../../../services/sendMessage"); // Importa função para enviar mensagens (ex.: SMS)
 const formatAmount = require("../../../utils/formatAmount"); // Importa função utilitária para formatar valores monetários
 const getTotalTicketsSelected = require("../../../utils/getTotalTicketsSelected"); // Importa função para calcular total de ingressos selecionados
 const { redis } = require("../../../redisClient"); // Importa cliente Redis para caching
@@ -15,12 +15,18 @@ const {
 const moment = require("moment"); // Importa biblioteca Moment.js para manipulação de datas
 
 function generateId() {
-  // Gera um número aleatório de 8 dígitos (entre 00000000 e 99999999)
-  const numeroAleatorio = Math.floor(Math.random() * 100000000)
-    .toString()
-    .padStart(8, "0"); // Garante que sempre terá 8 dígitos (preenche com zeros à esquerda se necessário)
+  // Gera um número entre 100000 e 999999 (nunca começará com 0)
+  const code = Math.floor(100000 + Math.random() * 900000);
+  return code.toString(); // Retorna como string (ex: "742813")
+}
 
-  return `S${numeroAleatorio}`;
+function generateReservationPIN() {
+  // Gera um número aleatório de 4 dígitos (entre 0000 e 9999)
+  const pin = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, "0"); // Garante 4 dígitos (preenche com zeros à esquerda se necessário)
+
+  return pin; // Retorna apenas o PIN (ex: "0427")
 }
 
 module.exports = {
@@ -40,6 +46,7 @@ module.exports = {
 
       const { event_id } = req.params; // Obtém o ID do evento dos parâmetros da URL
       const order_id = generateId(); // Gera um ID único para o pedido
+      const order_pin = generateReservationPIN()
       const code_ticket = `TICKET-${Date.now()}${Math.floor(
         Math.random() * 10000
       )}`; // Gera um código único para o ingresso
@@ -140,6 +147,7 @@ module.exports = {
             const newOrder = await Order.create({
               // Cria um novo pedido no banco
               id: order_id,
+              pin: order_pin,
               batches: batches,
               rate: amount > 0 ? rate : 0,
               event: event._id,
@@ -223,7 +231,7 @@ module.exports = {
           } else {
             // Se o valor do carrinho for maior que zero (pedido pago)
             switch (
-              payment_method // Verifica o método de pagamento
+            payment_method // Verifica o método de pagamento
             ) {
               case "reference": // Caso o método seja pagamento por referência
                 const data = {
@@ -242,6 +250,7 @@ module.exports = {
                     const newOrder = await Order.create({
                       // Cria o pedido no banco
                       id: order_id,
+                      pin: order_pin,
                       batches: batches,
                       rate: amount > 0 ? rate : 0,
                       event: event._id,
@@ -337,6 +346,7 @@ module.exports = {
                       }
 
                       // Envia mensagem (ex.: SMS) com detalhes do pagamento
+                      /* 
                       if (newOrder?.data?.phone.length) {
                         sendMessage(
                           newOrder.data.phone,
@@ -346,7 +356,7 @@ module.exports = {
                             newOrder.biz_content.reference_id
                           } Montante: ${formatAmount(newOrder.amount)}`
                         );
-                      }
+                      }*/
 
                       await event.updateOne({
                         // Atualiza o evento
@@ -392,6 +402,7 @@ module.exports = {
                     const newOrder = await Order.create({
                       // Cria o pedido no banco
                       id: order_id,
+                      pin: order_pin,
                       batches: batches,
                       rate: amount > 0 ? rate : 0,
                       event: event._id,
@@ -507,6 +518,7 @@ module.exports = {
                       const newOrder = await Order.create({
                         // Cria o pedido no banco
                         id: order_id,
+                        pin: order_pin,
                         batches: batches,
                         rate: amount > 0 ? rate : 0,
                         event: event._id,

@@ -11,6 +11,7 @@ const { getTicketByCode } = require("./controllers/getTicketByCode")
 const { checkIn } = require("./controllers/checkIn")
 const { getUserTickets } = require("./controllers/getUserTickets")
 const { getPartakers } = require("./controllers/getPartakers")
+const { getTicketsByOrderId } = require("./controllers/getTicketsByOrderId")
 const { searchTicketsByTags } = require("./controllers/searchTicketsByTags")
 
 // configurando as rotas
@@ -19,6 +20,7 @@ router.get("/user", protectedRoute, getUserTickets)
 router.get("/partakers", protectedRoute, getPartakers)
 router.get("/user/search", protectedRoute, searchTicketsByTags)
 router.get("/:code", getTicketByCode)
+router.put("/reservation", getTicketsByOrderId)
 router.put("/:code", checkIn)
 
 // exportando as rotas
