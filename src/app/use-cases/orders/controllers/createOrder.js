@@ -60,8 +60,7 @@ module.exports = {
         // Se event_id existe, prossegue
         const event = await Event.findOne({
           // Busca o evento no banco pelo ID e status ativo ("a")
-          _id: event_id,
-          status: "a",
+          _id: event_id
         });
 
         if (!event)
@@ -345,8 +344,9 @@ module.exports = {
                         );
                       }
 
-                      // Envia mensagem (ex.: SMS) com detalhes do pagamento
                       /* 
+                      // Envia mensagem (ex.: SMS) com detalhes do pagamento
+                      
                       if (newOrder?.data?.phone.length) {
                         sendMessage(
                           newOrder.data.phone,
@@ -356,7 +356,8 @@ module.exports = {
                             newOrder.biz_content.reference_id
                           } Montante: ${formatAmount(newOrder.amount)}`
                         );
-                      }*/
+                      }
+                      */
 
                       await event.updateOne({
                         // Atualiza o evento
@@ -407,7 +408,7 @@ module.exports = {
                       rate: amount > 0 ? rate : 0,
                       event: event._id,
                       reservation_number,
-                      expires_at: moment().add(30, "minutes"), // Expira em 30 minutos
+                      expires_at: moment().add(15, "minutes"), // Expira em 30 minutos
                       coupon: cart.coupon,
                       status: "p", // Status pendente
                       amount,
@@ -523,7 +524,7 @@ module.exports = {
                         rate: amount > 0 ? rate : 0,
                         event: event._id,
                         reservation_number,
-                        expires_at: moment().add(30, "minutes"), // Expira em 30 minutos
+                        expires_at: moment().add(15, "minutes"), // Expira em 30 minutos
                         coupon: cart.coupon,
                         status: "p", // Status pendente
                         amount,

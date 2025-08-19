@@ -10,7 +10,8 @@ const Ticket = require("../../../model/Ticket");
 module.exports = {
   async getTicketsByOrderId(req, res) {
     try {
-      const { page = 1, limit = 10, id } = req.query;
+      const { id } = req.params
+      const { page = 1, limit = 10 } = req.query;
 
       // Validação dos parâmetros de busca
       if (!id) {
@@ -22,7 +23,7 @@ module.exports = {
 
       // Construir a query de busca
       const query = {
-        id: id,
+        order: id,
       };
 
       // Opções de paginação
@@ -30,7 +31,7 @@ module.exports = {
         page: parseInt(page),
         limit: parseInt(limit),
         sort: { created_at: -1 }, // Ordena pelos mais recentes primeiro
-        populate: [{ path: "event" }, { path: "batch" }],
+        populate: [{ path: "event" }, {path: "order"}, { path: "batch" }],
       };
 
       // Busca paginada

@@ -20,7 +20,7 @@ router.get("/user", protectedRoute, getUserTickets)
 router.get("/partakers", protectedRoute, getPartakers)
 router.get("/user/search", protectedRoute, searchTicketsByTags)
 router.get("/:code", getTicketByCode)
-router.put("/reservation", getTicketsByOrderId)
+router.get("/reservation/:id", getTicketsByOrderId)
 router.put("/:code", checkIn)
 
 // exportando as rotas

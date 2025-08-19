@@ -18,7 +18,7 @@ module.exports = {
                 pin
             }).populate("event").lean()
 
-            if (!order) return res.status(404).send({
+            if (!order) return res.status(400).send({
                 message: "Ups! nao achamos nenhum pedido com este id."
             })
             else {

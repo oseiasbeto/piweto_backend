@@ -3,6 +3,7 @@ const Ticket = require("../../../model/Ticket"); // Importa o modelo Ticket para
 const { redis } = require("../../../redisClient"); // Importa o cliente Redis para manipulação de cache, usado para melhorar desempenho
 const sendMail = require("../../../mail/sendMail"); // Importa função reutilizável para enviar e-mails aos usuários
 const moment = require("moment"); // Importa a biblioteca Moment.js para facilitar manipulação e formatação de datas
+const sendMessage = require("../../../services/sendMessage")
 const Event = require("../../../model/Event"); // Importa o modelo Event para manipular dados de eventos no MongoDB
 const Payout = require("../../../model/Payout");
 const generateTicketsPDF = require("../../../utils/generateTicketsPDF"); // Importa função para gerar PDF de ingressos
@@ -27,7 +28,6 @@ module.exports = {
           status: "p",
         });
         if (order) {
-          console.log("processando o pedido")
           // Verifica se o pedido foi encontrado; se sim, prossegue com o processamento
           const event = await Event.findOne({
             // Busca o evento associado ao pedido pelo ID do evento, populando o campo 'created_by' com dados do organizador
@@ -124,7 +124,7 @@ module.exports = {
                 order.data.email,
                 "payment-confirmed", // Envia um e-mail de confirmação de pagamento ao comprador
                 `Confirmação de Pagamento - Pedido: ${order.id}, Evento: ${event.name}`, // Assunto do e-mail
-                {...emailData},
+                { ...emailData },
                 attachments
               );
               // Limpeza dos arquivos temporários
@@ -166,6 +166,17 @@ module.exports = {
                 entity: order.biz_content.entity_id, // Entidade do pagamento
                 validity: moment(order.expires_at).format("YYYY/MM/DD HH:mm"), // Data de expiração do pedido
               }
+            );
+          }
+
+          if (order?.data?.phone.length) {
+            sendMessage(
+              order.data.phone,
+              `Pagamento confirnado com sucesso!
+
+              Nº da reserva: ${order.id}
+              PIN: ${order.pin} 
+              Acesso: ${process.env.CLIENT_URL}reserva`
             );
           }
         }

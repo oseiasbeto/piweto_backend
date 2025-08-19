@@ -13,7 +13,7 @@ module.exports = {
       // 1. Buscar o cupom
       const coupon = await Coupon.findOne({ code });
       if (!coupon)
-        return res.status(404).send({
+        return res.status(400).send({
           message: "Cupom inválido ou não encontrado.",
         });
 
