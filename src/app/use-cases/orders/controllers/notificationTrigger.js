@@ -92,11 +92,7 @@ module.exports = {
           if (order?.data?.phone.length) {
             sendMessage(
               order.data.phone.replace(/\s/g, ''),
-              `Pagamento confirnado com sucesso!
-
-              Nº da reserva: ${order.id}
-              PIN: ${order.pin} 
-              Acesso: ${process.env.CLIENT_URL}reserva`
+              `Pagamento confirmado com sucesso!\nNº da reserva: ${order.id}.\nPIN: ${order.pin}.\nAcesso: ${process.env.CLIENT_URL}reserva`
             );
           }
 
