@@ -89,6 +89,16 @@ module.exports = {
           const tickets = await Ticket.find({
             order: order._id,
           }).populate("batch", "name");
+          if (order?.data?.phone.length) {
+            sendMessage(
+              order.data.phone.replace(/\s/g, ''),
+              `Pagamento confirnado com sucesso!
+
+              Nº da reserva: ${order.id}
+              PIN: ${order.pin} 
+              Acesso: ${process.env.CLIENT_URL}reserva`
+            );
+          }
 
           if (order?.data?.email) {
             try {
@@ -166,17 +176,6 @@ module.exports = {
                 entity: order.biz_content.entity_id, // Entidade do pagamento
                 validity: moment(order.expires_at).format("YYYY/MM/DD HH:mm"), // Data de expiração do pedido
               }
-            );
-          }
-
-          if (order?.data?.phone.length) {
-            sendMessage(
-              order.data.phone,
-              `Pagamento confirnado com sucesso!
-
-              Nº da reserva: ${order.id}
-              PIN: ${order.pin} 
-              Acesso: ${process.env.CLIENT_URL}reserva`
             );
           }
         }
