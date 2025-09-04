@@ -68,6 +68,7 @@ module.exports = {
               balance: +order.amount_after_rate, // Adiciona o valor após taxas ao saldo do evento
               orders_pending_cash: -order.amount_after_rate, // Subtrai o valor pendente, pois o pagamento foi concluído
               tickets_purchased_count: order.total_tickets_selected, // Incrementa o total de ingressos comprados com a quantidade do pedido
+              tickets_available_count: -order.total_tickets_selected, // Decrementa a quantidade de ingressos disponíveis com a quantidade do pedido
             },
           });
 

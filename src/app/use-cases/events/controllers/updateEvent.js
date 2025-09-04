@@ -23,6 +23,7 @@ module.exports = {
                 ends_at
             } = req.body
 
+
             if (!_id) return res.status(400).send({
                 message: "Informe o id do evento."
             })
@@ -82,6 +83,21 @@ module.exports = {
                     }
                 }
 
+                console.log(    _id,
+                name,
+                description,
+                cover,
+                address,
+                category,
+                status,
+                iban,
+                bank_name,
+                account_holder,
+                visibility,
+                show_on_map,
+                starts_at,
+                ends_at)
+
                 await event.updateOne({
                     $set: {
                         name: name ? name : event.name,
@@ -95,7 +111,7 @@ module.exports = {
                             account_holder: account_holder ? account_holder : event.data_bank.account_holder
                         },
                         visibility: visibility ? visibility : event.visibility,
-                        slug: name !== event.name ? `${generateSlugName(name)}_${Math.floor(Math.random() * 10000)}` : event.slug,
+                        slug: name && name !== event.name ? `${generateSlugName(name)}_${Math.floor(Math.random() * 10000)}` : event.slug,
                         tags: name ? [...event.tags, name] : event.tags,
                         description: description ? description : event.description,
                         starts_at: starts_at ? starts_at : event.starts_at,

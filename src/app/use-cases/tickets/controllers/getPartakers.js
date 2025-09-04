@@ -10,7 +10,7 @@ const Ticket = require("../../../model/Ticket");
 module.exports = {
   async getPartakers(req, res) {
     try {
-      const { page = 1, limit = 10, eventId, status } = req.query;
+      const { page = 1, limit = 10, q, eventId, status } = req.query;
 
       // Validação dos parâmetros de busca
       if (!eventId) {
@@ -26,6 +26,13 @@ module.exports = {
         ...(status && {
           status,
         }),
+        ...q && {
+          $or: [
+            { "costumer.full_name": { $regex: q, $options: "i" } },
+            { "costumer.email": { $regex: q, $options: "i" } },
+            { "costumer.phone": { $regex: q, $options: "i" } },
+          ],
+        }
       };
 
       // Opções de paginação
@@ -34,22 +41,30 @@ module.exports = {
         limit: parseInt(limit),
         sort: { created_at: -1 }, // Ordena pelos mais recentes primeiro
         populate: [{ path: "event" }, { path: "batch" }, { path: "order" }],
+        customLabels: {
+          totalDocs: 'total',
+          docs: 'data',
+          limit: 'limit',
+          page: 'page',
+          totalDocs: 'total',
+          hasNextPage: 'hasNext',
+          hasPrevPage: 'hasPrev'
+        }
       };
 
       // Busca paginada
       const tickets = await Ticket.paginate(query, options);
-
+      
       // Formata a resposta
       const response = {
         success: true,
-        data: tickets.docs,
+        data: tickets.data,
         pagination: {
           total: tickets.total,
           limit: tickets.limit,
           page: tickets.page,
-          pages: tickets.pages,
-          hasNextPage: tickets.hasNextPage,
-          hasPrevPage: tickets.hasPrevPage,
+          hasNextPage: tickets.hasNext,
+          hasPrevPage: tickets.hasPrev,
         },
       };
 

@@ -88,7 +88,7 @@ module.exports = {
             amount_after_rate = 0,
             total_tickets_selected = 0;
 
-          const rate = Number(process.env.RATE_SALE || 4); // Define taxa de venda (padrão 4%) a partir de variável de ambiente
+          const rate = Number(process.env.RATE_SALE || 5); // Define taxa de venda (padrão 5%) a partir de variável de ambiente
 
           if (amount > 0) {
             const real_amount =
@@ -217,7 +217,7 @@ module.exports = {
                 // Atualiza o evento, reduzindo ingressos disponíveis
                 $inc: {
                   tickets_available_count: -Number(total_tickets_selected),
-                  orders_pending_cash: Number(amount_after_rate),
+                  orders_pending_cash: amount_after_rate,
                 },
               });
 
@@ -365,9 +365,7 @@ module.exports = {
                           tickets_available_count: -Number(
                             total_tickets_selected
                           ),
-                          orders_pending_cash: Number(
-                            newOrder.amount_after_rate
-                          ),
+                          orders_pending_cash: newOrder.amount_after_rate
                         },
                       });
                       res.status(200).send({
@@ -482,9 +480,7 @@ module.exports = {
                           tickets_available_count: -Number(
                             total_tickets_selected
                           ),
-                          orders_pending_cash: Number(
-                            newOrder.amount_after_rate
-                          ),
+                          orders_pending_cash: newOrder.amount_after_rate
                         },
                       });
                       res.status(200).send({
@@ -598,9 +594,7 @@ module.exports = {
                             tickets_available_count: -Number(
                               total_tickets_selected
                             ),
-                            orders_pending_cash: Number(
-                              newOrder.amount_after_rate
-                            ),
+                            orders_pending_cash: newOrder.amount_after_rate
                           },
                         });
                         res.status(200).send({
