@@ -1,47 +1,53 @@
-const moment = require("moment");
-const { BadRequestError } = require("../../../error/bad-request-error");
-const { ForbiddenError } = require("../../../error/forbidden-error");
-const { NotFoundError } = require("../../../error/not-found-error");
-const { randomUUID } = require("crypto");
-const Staff = require("../../../entities/staff");
-const User = require("../../../entities/user");
-const { sendMail } = require("../../../mail/send-mail");
+//const moment = require("moment");
+//const { randomUUID } = require("crypto");
+const Staff = require("../../../model/Staff");
+const User = require("../../../model/User");
+const Event = require("../../../model/Event");
+//const { sendMail } = require("../../../mail/send-mail");
 
 module.exports = {
   async sendInviteStaff(req, res) {
     try {
-      const { member_email, event_id, current_user_id, mail, role } = req.body;
+      const { phone, role } = req.body;
+      const { event_id } = req.params;
 
-      if (!member_email) {
-        throw new BadRequestError("Member email is required.");
+      const current_user_id = req.user?.id;
+
+      if (!phone) {
+        return res
+          .status(400)
+          .send({ message: "Member phone is required." });
       }
       if (!event_id) {
-        throw new BadRequestError("Event id is required.");
+        return res.status(400).send({ message: "Event id is required." });
       }
       if (!current_user_id) {
-        throw new BadRequestError("Current user id is required.");
+        return res.status(400).send({ message: "User id is required." });
       }
       if (!role) {
-        throw new BadRequestError("Role is required.");
+        return res.status(400).send({ message: "Role is required." });
       }
 
-      const member = await User.findOne({ email: member_email });
+      const member = await User.findOne({ phone });
       if (!member) {
-        throw new BadRequestError("Cannot found user with this member email.");
+        return res
+          .status(400)
+          .send({ message: "Cannot found user with this phone." });
       }
 
-      const user = await User.findOne({ id: current_user_id });
+      const user = await User.findOne({ _id: current_user_id });
       if (!user) {
-        throw new BadRequestError("Something wrong.");
+        return res.status(400).send({ message: "Cannot found user." });
       }
 
-      const event = await Event.findOne({ id: event_id });
+      const event = await Event.findOne({ id: event_id })
+
       if (!event) {
-        throw new NotFoundError("Cannot found event with this id.");
+        return res.status(400).send({ message: "Cannot found event." });
       }
 
-      const invite_token = randomUUID();
-      const invite_expires_at = moment().add("1", "h");
+      //const invite_token = randomUUID();
+      //const invite_expires_at = moment().add("1", "h");
 
       const staff_member = await Staff.findOne({
         event: event._id,
@@ -49,29 +55,48 @@ module.exports = {
       });
 
       if (staff_member) {
-        throw new ForbiddenError(
-          "This member already included in event staff."
-        );
+        return res
+          .status(400)
+          .send({ message: "This user is already a staff member." });
       }
 
       const staff_user = await Staff.findOne({
         event: event._id,
         member: user._id,
       });
+
       if (!staff_user) {
-        throw new BadRequestError("Something wrong.");
+        return res
+          .status(403)
+          .send({ message: "You haven't permission to make this request." });
       }
       if (staff_user.role !== "manager") {
-        throw new ForbiddenError("You haven't permission to make this request.");
+        return res
+          .status(403)
+          .send({ message: "You haven't permission to make this request." });
       }
 
       const new_staff = new Staff({
         event: event._id,
         role,
-        member_id: member._id,
-        invite_token,
-        invite_expires_at,
+        member: member._id,
+        tags: [
+          member?.full_name,
+          member?.phone,
+          event?.name,
+          event?.slug,
+          event?.category,
+          event?.address.location ?? 'Angola'
+        ],
+        invite: {
+          status: "a",
+          token: null,
+          expires_at: null,
+          sent_by: user._id,
+        }
       });
+
+      /* 
 
       await new_staff.save();
 
@@ -96,20 +121,24 @@ module.exports = {
       };
 
       await sendMail(mail_data);
+      
+*/
+      await new_staff.save();
+
+      new_staff.event = event;
+      new_staff.member = member;
 
       res.status(200).send({
-        message: "Invite sent successfully.",
+        new_staff,
+        message: "Colaborador(a) adicionado com sucesso!",
       });
     } catch (err) {
-      if (err instanceof BadRequestError) {
-        res.status(400).send({ message: err.message });
-      } else if (err instanceof ForbiddenError) {
-        res.status(403).send({ message: err.message });
-      } else if (err instanceof NotFoundError) {
-        res.status(404).send({ message: err.message });
-      } else {
-        res.status(500).send({ message: err.message });
-      }
+      console.error("error: ", err);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error",
+        error: err.message,
+      });
     }
   },
 };

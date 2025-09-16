@@ -6,12 +6,17 @@ const sendMail = require("../../../mail/sendMail"); // Importa função para env
 //const sendMessage = require("../../../services/sendMessage"); // Importa função para enviar mensagens (ex.: SMS)
 const formatAmount = require("../../../utils/formatAmount"); // Importa função utilitária para formatar valores monetários
 const getTotalTicketsSelected = require("../../../utils/getTotalTicketsSelected"); // Importa função para calcular total de ingressos selecionados
+
+const generateTicketCode = require("../../../utils/generateTicketCode")
 const { redis } = require("../../../redisClient"); // Importa cliente Redis para caching
+
 const {
   executePayPayPayment,
   executeReferencePayment,
   executeMulPayment,
 } = require("../../../services/paypay"); // Importa função para processar pagamentos por referência
+
+const { executeGPOPayment } = require("../../../services/aki");
 const moment = require("moment"); // Importa biblioteca Moment.js para manipulação de datas
 
 function generateId() {
@@ -47,9 +52,6 @@ module.exports = {
       const { event_id } = req.params; // Obtém o ID do evento dos parâmetros da URL
       const order_id = generateId(); // Gera um ID único para o pedido
       const order_pin = generateReservationPIN()
-      const code_ticket = `TICKET-${Date.now()}${Math.floor(
-        Math.random() * 10000
-      )}`; // Gera um código único para o ingresso
 
       if (!event_id)
         return res.status(400).send({
@@ -186,10 +188,10 @@ module.exports = {
                       full_name,
                       event.name,
                       email,
-                      code_ticket,
+                      generateTicketCode(),
                       newOrder.id,
                     ],
-                    code: code_ticket,
+                    code: generateTicketCode(),
                     costumer: {
                       full_name,
                       email,
@@ -286,12 +288,12 @@ module.exports = {
                             order: newOrder._id,
                             batch: b._id,
                             price: b.price,
-                            code: code_ticket,
+                            code: generateTicketCode(),
                             tags: [
                               full_name,
                               event.name,
                               email,
-                              code_ticket,
+                              generateTicketCode(),
                               newOrder.id,
                             ],
                             costumer: {
@@ -383,14 +385,13 @@ module.exports = {
                 });
                 break; // Finaliza o caso "reference"
               case "mul":
+                // Caso o método seja pagamento móvel (Multicaixa)
                 const data_mul = {
                   // Dados para o processamento do pagamento
                   price: amount,
                   subject: `Adquira ingressos para o evento: ${event.name}`,
                   order_id,
                   phone_num: phone.replace(/\s+/g, ""),
-                  quantity: total_tickets_selected,
-                  timeout_express: "15m",
                 };
 
                 await executeMulPayment(data_mul).then(async (response) => {
@@ -438,12 +439,12 @@ module.exports = {
                             order: newOrder._id,
                             batch: b._id,
                             price: b.price,
-                            code: code_ticket,
+                            code: generateTicketCode(),
                             tags: [
                               full_name,
                               event.name,
                               email,
-                              code_ticket,
+                              generateTicketCode(),
                               newOrder.id,
                             ],
                             costumer: {
@@ -496,6 +497,7 @@ module.exports = {
                     });
                   }
                 });
+
                 break;
               case "paypay":
                 const data_paypay = {
@@ -552,12 +554,12 @@ module.exports = {
                               order: newOrder._id,
                               batch: b._id,
                               price: b.price,
-                              code: code_ticket,
+                              code: generateTicketCode(),
                               tags: [
                                 full_name,
                                 event.name,
                                 email,
-                                code_ticket,
+                                generateTicketCode(),
                                 newOrder.id,
                               ],
                               costumer: {

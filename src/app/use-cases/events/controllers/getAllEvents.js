@@ -6,7 +6,7 @@ module.exports = {
             const queryObj = { ...req.query }
 
             if (req.query.tags) {
-                const tags = req.query.tags
+                const tags = req.query.tags.trim()
                 queryObj.tags = { $regex: tags, $options: 'i' }
             }
 

@@ -15,7 +15,8 @@ module.exports = {
 
             const order = await Order.findOne({
                 id,
-                pin
+                pin,
+                status: "a"
             }).populate("event").lean()
 
             if (!order) return res.status(400).send({

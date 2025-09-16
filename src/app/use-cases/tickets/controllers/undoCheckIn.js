@@ -3,10 +3,9 @@ const Event = require("../../../model/Event")
 const moment = require("moment")
 
 module.exports = {
-    async checkIn(req, res) {
+    async undoCheckIn(req, res) {
         try {
             const { code } = req.params
-            const { checked_by } = req.body
 
             if (!code) return res.status(400).send({
                 message: "Informe o codigo do ingresso."
@@ -21,18 +20,12 @@ module.exports = {
                 message: "Ups! nao achamos nenhum ingresso activo com este codigo."
             })
             else {
-                if (ticket.check_in.at !== null || ticket.check_in.status === 'a')
-                    return res.status(400).send({
-                        ticket,
-                        message: "Este ingresso ja foi checkado"
-                    })
-                else {
+                if (ticket.check_in.at !== null || ticket.check_in.status === 'a') {
                     await ticket.updateOne({
                         $set: {
                             check_in: {
-                                status: "a",
-                                at: moment(),
-                                ...(checked_by && { checked_by })
+                                status: "p",
+                                at: null
                             }
                         }
                     })
@@ -41,12 +34,18 @@ module.exports = {
                             _id: ticket.event
                         }, {
                         $inc: {
-                            tickets_checked_count: 1
+                            tickets_checked_count: -1
                         }
                     })
                     res.status(200).send({
                         ticket,
-                        message: "Ingresso checkado com sucesso."
+                        message: "Checkin desfeito com sucesso."
+                    })
+                }
+
+                else {
+                    return res.status(400).send({
+                        message: "Este ingresso ainda nao foi checkado"
                     })
                 }
             }

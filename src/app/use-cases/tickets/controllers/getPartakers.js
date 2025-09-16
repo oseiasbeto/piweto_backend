@@ -40,7 +40,7 @@ module.exports = {
         page: parseInt(page),
         limit: parseInt(limit),
         sort: { created_at: -1 }, // Ordena pelos mais recentes primeiro
-        populate: [{ path: "event" }, { path: "batch" }, { path: "order" }],
+        populate: [{ path: "event" }, { path: "batch" }, { path: "order" }, { path: "check_in", populate: { path: "checked_by", select: "full_name phone email" } }],
         customLabels: {
           totalDocs: 'total',
           docs: 'data',
@@ -54,7 +54,7 @@ module.exports = {
 
       // Busca paginada
       const tickets = await Ticket.paginate(query, options);
-      
+
       // Formata a resposta
       const response = {
         success: true,

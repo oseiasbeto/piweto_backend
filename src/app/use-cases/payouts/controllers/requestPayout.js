@@ -11,6 +11,7 @@ const User = require("../../../model/User");
 const { executePaymentToBankAccount } = require("../../../services/paypay");
 
 const sendMail = require("../../../mail/sendMail"); // Importa função reutilizável para enviar e-mails aos usuários
+const moment = require("moment"); // Biblioteca para manipulação de datas e horas
 
 // Exporta um objeto com a função requestPayout que será usada como rota/controller
 module.exports = {
@@ -32,14 +33,15 @@ module.exports = {
       }
 
       // Busca o evento no banco de dados verificando se pertence ao usuário
-      const event = await Event.findOne({ _id: event_id, created_by: user_id });
+      const event = await Event.findOne({ _id: event_id });
 
       // Se o evento não for encontrado ou não pertencer ao usuário
       if (!event) {
-        return res.status(404).send({
+        return res.status(400).send({
           message: "Evento não encontrado ou você não tem permissão.",
         });
       }
+
 
       // Busca o usuário no banco de dados
       const user = await User.findOne({
@@ -61,7 +63,7 @@ module.exports = {
       // Verifica se já existe um saque pendente para este evento
       const existingPayout = await Payout.findOne({
         event: event_id,
-        status: "pending",
+        status: "in_transit",
       });
 
       // Se existir um saque pendente, retorna erro
@@ -114,7 +116,7 @@ module.exports = {
       // Cria um registro de saque no banco de dados
       const payout = await Payout.create({
         id: order_id,
-        user: user_id,
+        user: user._id,
         event: event_id,
         amount,
         status: "in_transit", // 'in_transit' provavelmente significa 'pending' (pendente)
@@ -128,6 +130,8 @@ module.exports = {
 
       // Se o saque foi criado com sucesso, retorna sucesso
       if (payout) {
+        await Event.updateOne({ _id: event_id }, { $inc: { balance: -amount } });
+
         sendMail(
           "oseiasbetodev@gmail.com", // Email da equipe (diferente do exemplo anterior que era para o usuário)
           "payout-request", // Identificador do template
@@ -144,9 +148,19 @@ module.exports = {
             // adminDashboardUrl: `https://admin.piweto.it.ao/payouts/${payout.id}`,
           }
         );
+
+        // Retorna resposta de sucesso com os detalhes do saque
         res.status(201).send({
           message: "Solicitação de saque criada com sucesso!",
-          payout,
+          payout: {
+            ...payout._doc,
+            user: {
+              id: user._id,
+              full_name: user.full_name,
+              email: user.email,
+              phone: user.phone,
+            }
+          }
         });
       }
     } catch (err) {

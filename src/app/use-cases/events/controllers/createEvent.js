@@ -161,6 +161,14 @@ module.exports = {
                             role: "manager",
                             member: user._id,
                             'invite.status': "a",
+                            tags: [
+                                user?.full_name,
+                                user?.email,
+                                event?.name,
+                                event?.slug,
+                                event?.category,
+                                event?.address.location ?? 'Angola'
+                            ],
                             is_admin: true
                         })
 

@@ -1,0 +1,55 @@
+const axios = require("axios");
+
+function formatToDecimal(value) {
+  return value.toFixed(2);
+}
+
+function executeGPOPayment({
+  price,
+  subject,
+  phone_num,
+  order_id
+}) {
+  // Construir o corpo da solicitação
+  var requestBody = {
+    WaitFeedback: true,
+    Payment: {
+      Order_id: order_id,
+      Amount: formatToDecimal(price),
+      Destination: phone_num,
+      Description: subject,
+      CallBack: {
+        Success: {
+          URL: "https://api.piweto.it.ao/v1/orders/notification-trigger",
+          Method: "POST",
+          Body: {
+            status: "TRADE_FINISHED",
+            out_trade_no: order_id
+          },
+          BodyType: "application/json"
+        },
+        Failure: {
+          URL: "https://api.piweto.it.ao/{ORDER_ID}/failure",
+          Method: "POST",
+          Body: {
+            status: "TRADE_FAILED",
+            out_trade_no: order_id
+          },
+          BodyType: "application/json"
+        }
+      }
+    }
+  };
+
+  // Enviar a solicitação
+  return axios.post(process.env.API_AKI + '/MultiCaixa/v1/Express/Payment', requestBody, {
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "atmn_DF8343B4DBBC921D117B1D5FD213DA9D50B1EC6C9D7615156383C6A041D6C29F"
+    },
+  });
+}
+
+module.exports = {
+  executeGPOPayment
+};

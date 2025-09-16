@@ -1,50 +1,71 @@
-const Payout = require("../../../model/Payout")
+const Payout = require("../../../model/Payout");
+
+/**
+ * @description Lista todos os pagamentos com possibilidade de filtros e paginação
+ * @param {Object} req - Request object
+ * @param {Object} res - Response object
+ * @returns {Object} - Retorna os pagamentos com metadados de paginação
+ */
 
 module.exports = {
     async getAllPayouts(req, res) {
         try {
-            const queryObj = { ...req.query }
+            const { page = 1, limit = 10, sort = '-created_at', fields, ...queryObj } = req.query;
 
-            const excludeFields = ['page', 'sort', 'limit', 'fields']
-            excludeFields.forEach(el => delete queryObj[el])
+            // Construir a query de busca com operadores MongoDB
+            let queryStr = JSON.stringify(queryObj);
+            queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
 
-            let queryStr = JSON.stringify(queryObj)
-            queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`)
+            const query = JSON.parse(queryStr);
 
-            const sortBy = req.query.sort ? req.query.sort.split(",").join(" ") : '-createdAt'
-            const fields = req.query.fields ? req.query.fields.split(",").join(" ") : ''
+            // Seleção de campos
+            const selectFields = fields ? fields.split(",").join(" ") : '';
 
-            const page = req.query.page || 1
-            const limit = req.query.limit || 10
-            const skip = (page - 1) * limit
-
-            let payouts = await Payout.find(JSON.parse(queryStr))
-                .select(fields)
-                .sort(sortBy)
-                .skip(skip)
-                .limit(Number(limit))
-
-            let metadata;
-            if (req.query.page && payouts.length) {
-                const count = await Payout.countDocuments(JSON.parse(queryStr))
-                if (skip > count) return res.status(404).send({
-                    message: "this page does not exists"
-                })
-                metadata = {
-                    currentPage: Number(req.query.page),
-                    totalPages: Math.ceil(count / Number(limit)),
-                    totalDocuments: count
+            // Opções de paginação
+            const options = {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                sort: sort.split(",").join(" "),
+                populate: { path: "user", select: "full_name phone email" },
+                select: selectFields,
+                customLabels: {
+                    docs: 'payouts',
+                    totalDocs: 'total',
+                    limit: 'limit',
+                    page: 'currentPage',
+                    nextPage: 'nextPage',
+                    prevPage: 'prevPage',
+                    totalPages: 'totalPages',
+                    hasNextPage: 'hasNext',
+                    hasPrevPage: 'hasPrev'
                 }
-            } else metadata = {}
+            };
 
-            res.status(200).send({
-                payouts,
-                metadata
-            })
+            // Busca paginada
+            const result = await Payout.paginate(query, options);
+
+            // Formata a resposta
+            const response = {
+                success: true,
+                payouts: result.payouts,
+                metadata: {
+                    total: result.total,
+                    limit: result.limit,
+                    page: result.currentPage,
+                    totalPages: result.totalPages,
+                    hasNextPage: result.hasNext,
+                    hasPrevPage: result.hasPrev
+                }
+            };
+
+            return res.status(200).json(response);
         } catch (err) {
-            res.status(500).send({
-                mensagem: err.message // erro interno
-            })
+            console.error("Error fetching payouts:", err);
+            return res.status(500).json({
+                success: false,
+                message: "Internal server error",
+                error: err.message
+            });
         }
     }
 }

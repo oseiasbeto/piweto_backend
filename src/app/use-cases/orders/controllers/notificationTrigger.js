@@ -90,6 +90,7 @@ module.exports = {
           const tickets = await Ticket.find({
             order: order._id,
           }).populate("batch", "name");
+
           if (order?.data?.phone.length) {
             sendMessage(
               order.data.phone.replace(/\s/g, ''),

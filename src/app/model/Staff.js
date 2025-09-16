@@ -1,4 +1,5 @@
 const mongoose = require("mongoose")
+const mongoosePaginate = require("mongoose-paginate-v2");
 
 const staff = new mongoose.Schema({
     role: {
@@ -43,5 +44,7 @@ const staff = new mongoose.Schema({
 }, {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 })
+
+staff.plugin(mongoosePaginate);
 
 module.exports = mongoose.model("Staff", staff);

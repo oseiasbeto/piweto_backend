@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const mongoosePaginate = require("mongoose-paginate-v2");
 
 const payoutSchema = new mongoose.Schema({
     id: {
@@ -65,5 +66,7 @@ const payoutSchema = new mongoose.Schema({
 }, {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 });
+
+payoutSchema.plugin(mongoosePaginate);
 
 module.exports = mongoose.model("Payout", payoutSchema);
