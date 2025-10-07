@@ -8,33 +8,34 @@ function executeGPOPayment({
   price,
   subject,
   phone_num,
-  order_id
+  order_id,
+  out_trade_no
 }) {
   // Construir o corpo da solicitação
   var requestBody = {
     WaitFeedback: true,
     Payment: {
       Order_id: order_id,
-      Amount: formatToDecimal(price),
+      Amount: price,
       Destination: phone_num,
       Description: subject,
       CallBack: {
         Success: {
           URL: "https://api.piweto.it.ao/v1/orders/notification-trigger",
           Method: "POST",
-          Body: {
+          Body: JSON.stringify({ 
             status: "TRADE_FINISHED",
-            out_trade_no: order_id
-          },
+            out_trade_no,
+          }),
           BodyType: "application/json"
         },
         Failure: {
-          URL: "https://api.piweto.it.ao/{ORDER_ID}/failure",
+          URL: "https://api.piweto.it.ao/v1/orders/notification-trigger",
           Method: "POST",
-          Body: {
+          Body: JSON.stringify({
             status: "TRADE_FAILED",
-            out_trade_no: order_id
-          },
+            out_trade_no
+          }),
           BodyType: "application/json"
         }
       }
