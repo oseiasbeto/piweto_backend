@@ -643,7 +643,6 @@ function executePaymentToPayPayAccount(price, payee_identity, order_id) {
 }
 
 function executePaymentToBankAccount(price, bank_details, order_id) {
-  console.log(price);
   function formatToDecimal(value) {
     return value.toFixed(2);
   }

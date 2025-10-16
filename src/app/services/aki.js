@@ -5,7 +5,7 @@ function formatToDecimal(value) {
 }
 
 function executeGPOPayment({
-  price,
+  amount,
   subject,
   phone_num,
   order_id,
@@ -16,7 +16,7 @@ function executeGPOPayment({
     WaitFeedback: true,
     Payment: {
       Order_id: order_id,
-      Amount: price,
+      Amount: formatToDecimal(amount),
       Destination: phone_num,
       Description: subject,
       CallBack: {

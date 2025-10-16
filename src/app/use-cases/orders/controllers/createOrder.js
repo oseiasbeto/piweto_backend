@@ -8,31 +8,18 @@ const formatAmount = require("../../../utils/formatAmount"); // Importa função
 const getTotalTicketsSelected = require("../../../utils/getTotalTicketsSelected"); // Importa função para calcular total de ingressos selecionados
 
 const generateTicketCode = require("../../../utils/generateTicketCode")
+const generateReservationPIN = require("../../../utils/generateReservationPIN")
+const generateId = require("../../../utils/generateId"); // Importa função utilitária para gerar IDs únicos
+
 const { redis } = require("../../../redisClient"); // Importa cliente Redis para caching
 
 const {
   executePayPayPayment,
-  executeReferencePayment,
-  executeMulPayment,
+  executeReferencePayment
 } = require("../../../services/paypay"); // Importa função para processar pagamentos por referência
 
-const { executeGPOPayment } = require("../../../services/aki");
+const { executeGPOPayment } = require("../../../services/appypay"); // Importa função para processar pagamentos móveis (Multicaixa)
 const moment = require("moment"); // Importa biblioteca Moment.js para manipulação de datas
-
-function generateId() {
-  // Gera um número entre 100000 e 999999 (nunca começará com 0)
-  const code = Math.floor(100000 + Math.random() * 900000);
-  return code.toString(); // Retorna como string (ex: "742813")
-}
-
-function generateReservationPIN() {
-  // Gera um número aleatório de 4 dígitos (entre 0000 e 9999)
-  const pin = Math.floor(Math.random() * 10000)
-    .toString()
-    .padStart(4, "0"); // Garante 4 dígitos (preenche com zeros à esquerda se necessário)
-
-  return pin; // Retorna apenas o PIN (ex: "0427")
-}
 
 module.exports = {
   // Exporta o módulo com a função createOrder
@@ -243,162 +230,195 @@ module.exports = {
                   timeout_express: "30m",
                 };
 
-                await executeReferencePayment(data).then(async (response) => {
-                  // Executa o pagamento
-                  if (response.data.code == "S0001") {
-                    // Se o pagamento for bem-sucedido
+                await executeReferencePayment(data)
+                  .then(async (response) => {
+                    // Executa o pagamento
+                    if (response.data.code == "S0001") {
+                      // Se o pagamento for bem-sucedido
 
-                    const newOrder = await Order.create({
-                      // Cria o pedido no banco
-                      id: order_id,
-                      pin: order_pin,
-                      batches: batches,
-                      rate: amount > 0 ? rate : 0,
-                      event: event._id,
-                      reservation_number,
-                      expires_at: moment().add(30, "minutes"), // Expira em 30 minutos
-                      coupon: cart.coupon,
-                      status: "p", // Status pendente
-                      amount,
-                      total_tickets_selected,
-                      amount_after_discount,
-                      amount_after_rate,
-                      biz_content: response.data
-                        ? response.data.biz_content
-                        : null, // Dados do pagamento
-                      data: {
-                        full_name,
-                        email,
-                        phone,
-                        payment_method,
-                      },
-                    });
+                      const newOrder = await Order.create({
+                        // Cria o pedido no banco
+                        id: order_id,
+                        pin: order_pin,
+                        batches: batches,
+                        rate: amount > 0 ? rate : 0,
+                        event: event._id,
+                        reservation_number,
+                        expires_at: moment().add(30, "minutes"), // Expira em 30 minutos
+                        coupon: cart.coupon,
+                        status: "p", // Status pendente
+                        amount,
+                        total_tickets_selected,
+                        amount_after_discount,
+                        amount_after_rate,
+                        biz_content: response.data
+                          ? response.data.biz_content
+                          : null, // Dados do pagamento
+                        data: {
+                          full_name,
+                          email,
+                          phone,
+                          payment_method,
+                        },
+                      });
 
-                    if (newOrder) {
-                      // Se o pedido foi criado
+                      if (newOrder) {
+                        // Se o pedido foi criado
 
-                      batches.map(async (b) => {
-                        // Cria ingressos para cada lote
-                        for (let i = 0; i < b.quantitySelected; i++) {
-                          await Ticket.create({
-                            id: Date.now(),
-                            name: b.name,
-                            booking_number: newOrder.reservation_number,
-                            type: b.type,
-                            order: newOrder._id,
-                            batch: b._id,
-                            price: b.price,
-                            code: generateTicketCode(),
-                            tags: [
-                              full_name,
-                              event.name,
-                              email,
-                              generateTicketCode(),
-                              newOrder.id,
-                            ],
-                            costumer: {
-                              full_name,
-                              email,
-                              phone,
-                            },
-                            description: b.description,
-                            event: event._id,
-                          });
-
-                          await Batch.updateOne(
-                            {
-                              // Atualiza quantidade no lote
-                              _id: b._id,
-                            },
-                            {
-                              $inc: {
-                                quantity: -b.quantitySelected,
+                        batches.map(async (b) => {
+                          // Cria ingressos para cada lote
+                          for (let i = 0; i < b.quantitySelected; i++) {
+                            await Ticket.create({
+                              id: Date.now(),
+                              name: b.name,
+                              booking_number: newOrder.reservation_number,
+                              type: b.type,
+                              order: newOrder._id,
+                              batch: b._id,
+                              price: b.price,
+                              code: generateTicketCode(),
+                              tags: [
+                                full_name,
+                                event.name,
+                                email,
+                                generateTicketCode(),
+                                newOrder.id,
+                              ],
+                              costumer: {
+                                full_name,
+                                email,
+                                phone,
                               },
+                              description: b.description,
+                              event: event._id,
+                            });
+
+                            await Batch.updateOne(
+                              {
+                                // Atualiza quantidade no lote
+                                _id: b._id,
+                              },
+                              {
+                                $inc: {
+                                  quantity: -b.quantitySelected,
+                                },
+                              }
+                            );
+                          }
+                        });
+
+                        const EXPIRATION_TIME = 3600; // Define tempo de expiração no Redis (1 hora)
+                        await redis.set(`pedido:${order_id}`, "pending", {
+                          EX: EXPIRATION_TIME,
+                        }); // Armazena status no Redis
+
+                        if (email) {
+                          // Se o usuário tiver e-mail, envia notificação
+                          sendMail(
+                            email,
+                            "payment-ref",
+                            `Reserva iniciada para o evento ${event.name}`,
+                            {
+                              id: newOrder.id,
+                              eventName: event.name,
+                              userFullName: full_name,
+                              reservationNumber: newOrder.reservation_number,
+                              ticketQuantity: total_tickets_selected,
+                              amount: formatAmount(newOrder.amount),
+                              reference: newOrder.biz_content.reference_id,
+                              entity: newOrder.biz_content.entity_id,
+                              validity: moment(newOrder.expires_at)
+                                .add("1", "h")
+                                .format("YYYY/MM/DD HH:mm"),
                             }
                           );
                         }
-                      });
 
-                      const EXPIRATION_TIME = 3600; // Define tempo de expiração no Redis (1 hora)
-                      await redis.set(`pedido:${order_id}`, "pending", {
-                        EX: EXPIRATION_TIME,
-                      }); // Armazena status no Redis
+                        /* 
+                        // Envia mensagem (ex.: SMS) com detalhes do pagamento
+                        
+                        if (newOrder?.data?.phone.length) {
+                          sendMessage(
+                            newOrder.data.phone,
+                            `Adquira os teus ingressos pela Entidate: ${
+                              newOrder.biz_content.entity_id
+                            } Referencia: ${
+                              newOrder.biz_content.reference_id
+                            } Montante: ${formatAmount(newOrder.amount)}`
+                          );
+                        }
+                        */
 
-                      if (email) {
-                        // Se o usuário tiver e-mail, envia notificação
-                        sendMail(
-                          email,
-                          "payment-ref",
-                          `Reserva iniciada para o evento ${event.name}`,
-                          {
-                            id: newOrder.id,
-                            eventName: event.name,
-                            userFullName: full_name,
-                            reservationNumber: newOrder.reservation_number,
-                            ticketQuantity: total_tickets_selected,
-                            amount: formatAmount(newOrder.amount),
-                            reference: newOrder.biz_content.reference_id,
-                            entity: newOrder.biz_content.entity_id,
-                            validity: moment(newOrder.expires_at)
-                              .add("1", "h")
-                              .format("YYYY/MM/DD HH:mm"),
-                          }
-                        );
+                        await event.updateOne({
+                          // Atualiza o evento
+                          $inc: {
+                            tickets_available_count: -Number(
+                              total_tickets_selected
+                            ),
+                            orders_pending_cash: newOrder.amount_after_rate
+                          },
+                        });
+                        res.status(200).send({
+                          // Retorna sucesso com o pedido criado
+                          newOrder,
+                          message: "Boa! a sua reserva foi criada com sucesso.",
+                        });
                       }
-
-                      /* 
-                      // Envia mensagem (ex.: SMS) com detalhes do pagamento
-                      
-                      if (newOrder?.data?.phone.length) {
-                        sendMessage(
-                          newOrder.data.phone,
-                          `Adquira os teus ingressos pela Entidate: ${
-                            newOrder.biz_content.entity_id
-                          } Referencia: ${
-                            newOrder.biz_content.reference_id
-                          } Montante: ${formatAmount(newOrder.amount)}`
-                        );
-                      }
-                      */
-
-                      await event.updateOne({
-                        // Atualiza o evento
-                        $inc: {
-                          tickets_available_count: -Number(
-                            total_tickets_selected
-                          ),
-                          orders_pending_cash: newOrder.amount_after_rate
-                        },
-                      });
-                      res.status(200).send({
-                        // Retorna sucesso com o pedido criado
-                        newOrder,
-                        message: "Boa! a sua reserva foi criada com sucesso.",
+                    } else {
+                      // Se o pagamento falhar
+                      res.status(400).send({
+                        message: "Ups! algo deu errado.",
                       });
                     }
-                  } else {
-                    // Se o pagamento falhar
-                    res.status(400).send({
-                      message: "Ups! algo deu errado.",
+                  })
+                  .catch((err) => {
+                    console.error('Erro ao solicitar pagamento por referência:', err.response?.data || err.message);
+                    res.status(500).send({
+                      message: "Erro ao processar o pagamento por referência. Tente novamente mais tarde.",
                     });
-                  }
-                });
+                  })
+                ;
                 break; // Finaliza o caso "reference"
-              case "mul":
+              case "GPO":
                 // Caso o método seja pagamento móvel (Multicaixa)
-                const data_mul = {
-                  // Dados para o processamento do pagamento
-                  price: amount,
-                  subject: `Adquira ingressos para o evento: ${event.name}`,
-                  order_id,
-                  phone_num: phone.replace(/\s+/g, ""),
-                };
+                if (!phone)
+                  return res.status(400).send({
+                    // Verifica se o telefone foi fornecido
+                    message:
+                      "Para processar pagamentos móveis, informe o número de telefone.",
+                  });
 
-                await executeMulPayment(data_mul).then(async (response) => {
-                  // Executa o pagamento
-                  if (response.data.code == "S0001") {
+                if (phone.length < 9)
+                  return res.status(400).send({
+                    // Verifica se o número de telefone é válido
+                    message:
+                      "Informe um número de telefone válido para processar o pagamento móvel.",
+                  });
+
+                try {
+
+                  const response = await executeGPOPayment({
+                    orderId: order_id,
+                    amount,
+                    currency: "AOA",
+                    subject: "Piweto - Compra de Ingressos",
+                    phoneNumber: phone,
+                    customer: {
+                      name: full_name,
+                      phone: phone,
+                      email: email
+                    }
+                  })
+
+                  const data = response.data.responseStatus;
+                  const status = data.status;
+
+                  if (status !== "Success") {
+                    res.status(400).send({
+                      message: "O seu pagamento foi recusado pelo sistema Multicaixa Express. Se o problema persistir, contacte a equipa de suporte do Multicaixa Express.",
+                    });
+                  } else {
                     // Se o pagamento for bem-sucedido
-
                     const newOrder = await Order.create({
                       // Cria o pedido no banco
                       id: order_id,
@@ -414,9 +434,11 @@ module.exports = {
                       total_tickets_selected,
                       amount_after_discount,
                       amount_after_rate,
-                      biz_content: response.data
-                        ? response.data.biz_content
-                        : null, // Dados do pagamento
+                      biz_content: {
+                        charge_id: data?.id || null,
+                        status: data?.status || null,
+                        source: data?.source || null,
+                      }, // Dados do pagamento
                       data: {
                         full_name,
                         email,
@@ -490,14 +512,13 @@ module.exports = {
                         message: "Boa! a sua reserva foi criada com sucesso.",
                       });
                     }
-                  } else {
-                    // Se o pagamento falhar
-                    res.status(400).send({
-                      message: "Ups! algo deu errado.",
-                    });
                   }
-                });
-
+                } catch (err) {
+                  console.error('Erro ao processar o pagamento móvel:', err.response.data.responseStatus);
+                  res.status(500).send({
+                    message: "Erro ao processar o pagamento móvel. Tente novamente mais tarde.",
+                  });
+                }
                 break;
               case "paypay":
                 const data_paypay = {
@@ -508,111 +529,120 @@ module.exports = {
                   timeout_express: "15m",
                 };
 
-                await executePayPayPayment(data_paypay).then(
-                  async (response) => {
-                    // Executa o pagamento
-                    if (response.data.code == "S0001") {
-                      // Se o pagamento for bem-sucedido
+                await executePayPayPayment(data_paypay)
+                  .then(
+                    async (response) => {
+                      // Executa o pagamento
+                      if (response.data.code == "S0001") {
+                        // Se o pagamento for bem-sucedido
 
-                      const newOrder = await Order.create({
-                        // Cria o pedido no banco
-                        id: order_id,
-                        pin: order_pin,
-                        batches: batches,
-                        rate: amount > 0 ? rate : 0,
-                        event: event._id,
-                        reservation_number,
-                        expires_at: moment().add(15, "minutes"), // Expira em 30 minutos
-                        coupon: cart.coupon,
-                        status: "p", // Status pendente
-                        amount,
-                        total_tickets_selected,
-                        amount_after_discount,
-                        amount_after_rate,
-                        biz_content: response.data
-                          ? response.data.biz_content
-                          : null, // Dados do pagamento
-                        data: {
-                          full_name,
-                          email,
-                          phone,
-                          payment_method,
-                        },
-                      });
-
-                      if (newOrder) {
-                        // Se o pedido foi criado
-
-                        batches.map(async (b) => {
-                          // Cria ingressos para cada lote
-                          for (let i = 0; i < b.quantitySelected; i++) {
-                            await Ticket.create({
-                              id: Date.now(),
-                              name: b.name,
-                              booking_number: newOrder.reservation_number,
-                              type: b.type,
-                              order: newOrder._id,
-                              batch: b._id,
-                              price: b.price,
-                              code: generateTicketCode(),
-                              tags: [
-                                full_name,
-                                event.name,
-                                email,
-                                generateTicketCode(),
-                                newOrder.id,
-                              ],
-                              costumer: {
-                                full_name,
-                                email,
-                                phone,
-                              },
-                              description: b.description,
-                              event: event._id,
-                            });
-
-                            await Batch.updateOne(
-                              {
-                                // Atualiza quantidade no lote
-                                _id: b._id,
-                              },
-                              {
-                                $inc: {
-                                  quantity: -b.quantitySelected,
-                                },
-                              }
-                            );
-                          }
-                        });
-
-                        const EXPIRATION_TIME = 1800; // Define tempo de expiração no Redis (30 minutos)
-                        await redis.set(`pedido:${order_id}`, "pending", {
-                          EX: EXPIRATION_TIME,
-                        }); // Armazena status no Redis
-
-                        await event.updateOne({
-                          // Atualiza o evento
-                          $inc: {
-                            tickets_available_count: -Number(
-                              total_tickets_selected
-                            ),
-                            orders_pending_cash: newOrder.amount_after_rate
+                        const newOrder = await Order.create({
+                          // Cria o pedido no banco
+                          id: order_id,
+                          pin: order_pin,
+                          batches: batches,
+                          rate: amount > 0 ? rate : 0,
+                          event: event._id,
+                          reservation_number,
+                          expires_at: moment().add(15, "minutes"), // Expira em 30 minutos
+                          coupon: cart.coupon,
+                          status: "p", // Status pendente
+                          amount,
+                          total_tickets_selected,
+                          amount_after_discount,
+                          amount_after_rate,
+                          biz_content: response.data
+                            ? response.data.biz_content
+                            : null, // Dados do pagamento
+                          data: {
+                            full_name,
+                            email,
+                            phone,
+                            payment_method,
                           },
                         });
-                        res.status(200).send({
-                          // Retorna sucesso com o pedido criado
-                          newOrder,
-                          message: "Boa! a sua reserva foi criada com sucesso.",
+
+                        if (newOrder) {
+                          // Se o pedido foi criado
+
+                          batches.map(async (b) => {
+                            // Cria ingressos para cada lote
+                            for (let i = 0; i < b.quantitySelected; i++) {
+                              await Ticket.create({
+                                id: Date.now(),
+                                name: b.name,
+                                booking_number: newOrder.reservation_number,
+                                type: b.type,
+                                order: newOrder._id,
+                                batch: b._id,
+                                price: b.price,
+                                code: generateTicketCode(),
+                                tags: [
+                                  full_name,
+                                  event.name,
+                                  email,
+                                  generateTicketCode(),
+                                  newOrder.id,
+                                ],
+                                costumer: {
+                                  full_name,
+                                  email,
+                                  phone,
+                                },
+                                description: b.description,
+                                event: event._id,
+                              });
+
+                              await Batch.updateOne(
+                                {
+                                  // Atualiza quantidade no lote
+                                  _id: b._id,
+                                },
+                                {
+                                  $inc: {
+                                    quantity: -b.quantitySelected,
+                                  },
+                                }
+                              );
+                            }
+                          });
+
+                          const EXPIRATION_TIME = 1800; // Define tempo de expiração no Redis (30 minutos)
+                          await redis.set(`pedido:${order_id}`, "pending", {
+                            EX: EXPIRATION_TIME,
+                          }); // Armazena status no Redis
+
+                          await event.updateOne({
+                            // Atualiza o evento
+                            $inc: {
+                              tickets_available_count: -Number(
+                                total_tickets_selected
+                              ),
+                              orders_pending_cash: newOrder.amount_after_rate
+                            },
+                          });
+                          res.status(200).send({
+                            // Retorna sucesso com o pedido criado
+                            newOrder,
+                            message: "Boa! a sua reserva foi criada com sucesso.",
+                          });
+                        }
+                      } else {
+                        // Se o pagamento falhar
+                        console.error('Pagamento recusado:', response.data);
+                        res.status(400).send({
+                          message: "Erro ao processar o pagamento via PayPay. Tente novamente.",
                         });
                       }
-                    } else {
-                      // Se o pagamento falhar
-                      res.status(400).send({
-                        message: "Ups! algo deu errado.",
-                      });
                     }
-                  }
-                );
+                  )
+                  .catch((err) => {
+                    console.error('Erro ao solicitar pagamento PayPay:', err.response?.data || err.message);
+                    res.status(500).send({
+                      message: "Erro ao processar o pagamento via PayPay. Tente novamente mais tarde.",
+                    });
+                  })
+                  ;
                 break;
             }
           }
