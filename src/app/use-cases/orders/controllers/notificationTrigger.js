@@ -30,6 +30,9 @@ module.exports = {
           id: out_trade_no || merchantTransactionId,
           status: "p",
         });
+
+        console.log("Buscando pedido com ID:", out_trade_no || merchantTransactionId); // Loga o ID do pedido que está sendo buscado
+        console.log("Pedido encontrado:", order); // Loga o pedido encontrado para depuração
         if (order) {
           // Verifica se o pedido foi encontrado; se sim, prossegue com o processamento
           const event = await Event.findOne({
