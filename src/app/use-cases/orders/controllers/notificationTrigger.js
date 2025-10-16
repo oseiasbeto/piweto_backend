@@ -18,16 +18,16 @@ module.exports = {
     try {
     
       // Inicia um bloco try-catch para capturar e tratar erros durante a execução
-      const { status, out_trade_no } = req.body; // Desestrutura o corpo da requisição para obter o status da transação e o ID do pedido (out_trade_no)
+      const { status, out_trade_no, merchantTransactionId, responseStatus } = req.body; // Desestrutura o corpo da requisição para obter o status da transação e o ID do pedido (out_trade_no)
 
       console.log("Notificação recebida:", req.body); // Loga o corpo da requisição para depuração
       
-      if (status == "TRADE_FINISHED") {
+      if (status == "TRADE_FINISHED" || responseStatus?.status == "Success") {
         // Caso o status seja "TRADE_FINISHED", indicando que a transação foi concluída com sucesso
 
         const order = await Order.findOne({
           // Busca um pedido no banco de dados com o ID (out_trade_no) e status pendente ("p")
-          id: out_trade_no,
+          id: out_trade_no || merchantTransactionId,
           status: "p",
         });
         if (order) {
