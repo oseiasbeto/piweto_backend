@@ -16,7 +16,7 @@ connectDB(); // Chama a função para estabelecer a conexão
 const env = process.env.NODE_ENV
 
 // Se o ambiente for de produção, conecta ao Redis
-if (env === 'prod') {
+if (env === 'prod1') {
     connectRedis().then(() => {
        // initTokenRefresh(); // ← CHAMAR APÓS CONEXÃO BEM-SUCEDIDA
     }).catch(error => {
