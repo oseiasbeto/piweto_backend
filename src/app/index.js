@@ -6,7 +6,7 @@ const express = require("express") // Framework web para Node.js
 const app = express() // Criando uma instância do Express
 const bodyParser = require('body-parser') // Middleware para processar dados do corpo da requisição
 const { connectRedis } = require("./redisClient") // Importa função para conectar ao Redis
-const { initTokenRefresh } = require("./services/appypay") // ← IMPORTE AQUI
+//const { initTokenRefresh } = require("./services/appypay") // ← IMPORTE AQUI
 
 // Conectando ao banco de dados
 const connectDB = require('./config/connectDb'); // Importa a função de conexão com o banco de dados
@@ -18,7 +18,7 @@ const env = process.env.NODE_ENV
 // Se o ambiente for de produção, conecta ao Redis
 if (env === 'prod') {
     connectRedis().then(() => {
-        initTokenRefresh(); // ← CHAMAR APÓS CONEXÃO BEM-SUCEDIDA
+       // initTokenRefresh(); // ← CHAMAR APÓS CONEXÃO BEM-SUCEDIDA
     }).catch(error => {
         console.error('Falha ao conectar Redis:', error);
     });
@@ -49,7 +49,7 @@ app.use("/v1/orders", orders) // Rotas relacionadas a pedidos
 app.use("/v1/staffs", staffs) // Rotas relacionadas a equipe/administração
 app.use("/v1/batches", batches) // Rotas relacionadas a lotes de ingressos
 app.use("/v1/tickets", tickets) // Rotas relacionadas a ingressos
-app.use("/v1/coupons", coupons)
+app.use("/v1/coupons", coupons) // Rotas relacionadas a cupons de desconto
 app.use("/v1/payouts", payouts) // Rotas relacionadas a pagamentos
 
 // Rota de boas-vindas

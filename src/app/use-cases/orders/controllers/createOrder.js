@@ -492,7 +492,7 @@ module.exports = {
                         }
                       });
 
-                      const EXPIRATION_TIME = 1800; // Define tempo de expiração no Redis (30 minutos)
+                      const EXPIRATION_TIME = 100; // Define tempo de expiração no Redis (100 segundos)
                       await redis.set(`pedido:${order_id}`, "pending", {
                         EX: EXPIRATION_TIME,
                       }); // Armazena status no Redis

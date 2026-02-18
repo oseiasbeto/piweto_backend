@@ -11,7 +11,7 @@ const { getAllPayouts } = require("./controllers/getAllPayouts");
 
 // Configuração das rotas
 router.post("/", protectedRoute, requestPayout);
-router.put("/:payout_id", protectedRoute, updatePayoutStatus);
+router.put("/:payout_id", updatePayoutStatus);
 router.get("/", protectedRoute, getAllPayouts);
 
 // Exportando as rotas

@@ -2,12 +2,13 @@ const { createClient } = require('redis');
 const { cancelOrder } = require('./queues/cancelOrder')
 const { deleteUser } = require('./queues/deleteUser')
 
-// 🔹 Configuração das credenciais do Redis
+// Configuração das credenciais do Redis
 const REDIS_HOST = process.env.REDIS_HOST;
 const REDIS_PORT = process.env.REDIS_PORT;
 const REDIS_PASSWORD = process.env.REDIS_PASSWORD; // Defina se necessário
 
 const redis = createClient({
+    username: 'default', // O Redis 6+ suporta autenticação por usuário, mas o nome de usuário padrão é 'default'
     socket: {
         host: REDIS_HOST,
         port: REDIS_PORT,
