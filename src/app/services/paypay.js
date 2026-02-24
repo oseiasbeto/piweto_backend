@@ -769,5 +769,5 @@ module.exports = {
   executeMulPayment,
   executePaymentToPayPayAccount,
   executePaymentToBankAccount,
-  closePayment,
+  closePayment
 };
