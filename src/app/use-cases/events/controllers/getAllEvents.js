@@ -38,6 +38,7 @@ module.exports = {
                 metadata = {
                     currentPage: Number(req.query.page),
                     totalPages: Math.ceil(count / Number(limit)),
+                    hasNextPage: skip + events.length < count,
                     totalDocuments: count
                 }
             } else metadata = {}
