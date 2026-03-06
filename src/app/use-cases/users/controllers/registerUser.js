@@ -1,7 +1,7 @@
 const User = require("../../../model/User")
 const userTransformer = require("../../../utils/userTransformer")
 const bcrypt = require("bcryptjs")
-//const { redis } = require('../../../redisClient');
+const { redis } = require('../../../redisClient');
 const sendMessage = require('../../../services/sendMessage')
 const moment = require('moment')
 
@@ -76,10 +76,9 @@ module.exports = {
 
                         sendMessage(newUser.phone, `${otp} este e o seu codigo de confirmacao.`)
 
-                        //const EXPIRATION_TIME = 3600 * 24; // 24 hora (em segundos)
+                        const EXPIRATION_TIME = 3600 * 24; // 24 hora (em segundos)
 
-                        /* 
-                        await redis.set(`conta:${newUser.check_otp_code}`, 'pending', { EX: EXPIRATION_TIME });*/
+                        await redis.set(`conta:${newUser.check_otp_code}`, 'pending', { EX: EXPIRATION_TIME });
 
                         res.status(201).send({
                             user: userTransformer(newUser),

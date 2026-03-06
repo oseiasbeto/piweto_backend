@@ -307,11 +307,11 @@ module.exports = {
                           }
                         });
 
-                        /* 
+                      
                         const EXPIRATION_TIME = 3600; // Define tempo de expiração no Redis (1 hora)
                         await redis.set(`pedido:${order_id}`, "pending", {
                           EX: EXPIRATION_TIME,
-                        }); // Armazena status no Redis*/
+                        }); // Armazena status no Redis
 
                         if (email) {
                           // Se o usuário tiver e-mail, envia notificação
@@ -493,11 +493,11 @@ module.exports = {
                         }
                       });
 
-                      /* 
+                      
                       const EXPIRATION_TIME = 100; // Define tempo de expiração no Redis (100 segundos)
                       await redis.set(`pedido:${order_id}`, "pending", {
                         EX: EXPIRATION_TIME,
-                      }); // Armazena status no Redis*/
+                      }); // Armazena status no Redis
 
                       await event.updateOne({
                         // Atualiza o evento
@@ -609,11 +609,11 @@ module.exports = {
                             }
                           });
 
-                          /* 
+                           
                           const EXPIRATION_TIME = 1800; // Define tempo de expiração no Redis (30 minutos)
                           await redis.set(`pedido:${order_id}`, "pending", {
                             EX: EXPIRATION_TIME,
-                          }); // Armazena status no Redis*/
+                          }); // Armazena status no Redis
 
                           await event.updateOne({
                             // Atualiza o evento
