@@ -17,7 +17,7 @@ const { updateEvent } = require("./controllers/updateEvent")
 const { processEvent } = require("./controllers/processEvent");
 
 // configurando as rotas
-router.post("/", protectedRoute, uploadMulter.single("file"), createEvent)
+router.post("/", protectedRoute, createEvent)
 router.get("/:slug", getBySlug)
 router.get("/preview/:id", getEventById)
 router.delete("/:id", protectedRoute, deleteEvent)

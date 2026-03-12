@@ -77,41 +77,42 @@ module.exports = {
       const order_id = `${Date.now()}${Math.floor(Math.random() * 10000)}`;
 
       // Executa o pagamento para a conta bancária usando o serviço PayPay
+      if (!event.data_bank.iban || !event.data_bank.bank_name || !event.data_bank.account_holder) {
+        return res.status(400).send({ message: "Dados bancários incompletos. Verifique as informações do evento." });
+      }
+      await executePaymentToBankAccount(Number(amount), {
+        iban: event.data_bank.iban,
+        bank_name: event.data_bank.bank_name,
+        account_holder: event.data_bank.account_holder
+      }, order_id).then(async response => {
+        // Se a resposta do serviço for bem-sucedida (código S0001)
+        if (response.data.code == "S0001") {
+          // Cria um registro de saque no banco de dados
+          const payout = await Payout.create({
+            id: order_id,
+            user: user_id,
+            event: event_id,
+            amount,
+            status: "in_transit", // 'in_transit' provavelmente significa 'pending' (pendente)
+            payment_method: "bank_transfer",
+            bank_details: {
+              iban: event.data_bank.iban,
+              bank_name: event.data_bank.bank_name,
+              account_holder: event.data_bank.account_holder
+            }
+          });
 
-      /* 
-            await executePaymentToBankAccount(Number(amount), {
-                iban: event.data_bank.iban,
-                bank_name: event.data_bank.bank_name,
-                account_holder: event.data_bank.account_holder
-            }, order_id).then(async response => {
-                // Se a resposta do serviço for bem-sucedida (código S0001)
-                if (response.data.code == "S0001") {
-                    // Cria um registro de saque no banco de dados
-                    const payout = await Payout.create({
-                        id: order_id,
-                        user: user_id,
-                        event: event_id,
-                        amount,
-                        status: "in_transit", // 'in_transit' provavelmente significa 'pending' (pendente)
-                        payment_method: "bank_transfer",
-                        bank_details: {
-                            iban: event.data_bank.iban,
-                            bank_name: event.data_bank.bank_name,
-                            account_holder: event.data_bank.account_holder
-                        }
-                    });
-
-                    // Se o saque foi criado com sucesso, retorna sucesso
-                    if (payout) {
-                        res.status(201).send({ message: "Solicitação de saque criada com sucesso!", payout });
-                    }
-                } else {
-                    // Se o serviço retornar um erro, retorna mensagem genérica
-                    res.status(400).send({
-                        message: "Saque não processado. Verifique os dados bancários."
-                    })
-                }
-            })*/
+          // Se o saque foi criado com sucesso, retorna sucesso
+          if (payout) {
+            res.status(201).send({ message: "Solicitação de saque criada com sucesso!", payout });
+          }
+        } else {
+          // Se o serviço retornar um erro, retorna mensagem genérica
+          res.status(400).send({
+            message: "Saque não processado. Verifique os dados bancários."
+          })
+        }
+      })
 
       // Cria um registro de saque no banco de dados
       const payout = await Payout.create({

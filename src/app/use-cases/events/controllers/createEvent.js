@@ -3,10 +3,6 @@ const Event = require("../../../model/Event")
 const Staff = require("../../../model/Staff")
 const Batch = require("../../../model/Batch")
 const generateSlugName = require("../../../utils/generateSlugName")
-
-const cloudinary = require("../../../config/cloudinary");
-const streamifier = require("streamifier");
-
 const { randomUUID } = require('crypto')
 const moment = require('moment')
 
@@ -19,6 +15,7 @@ module.exports = {
                 description,
                 batches,
                 address,
+                cover,
                 status,
                 category,
                 visibility,
@@ -57,11 +54,11 @@ module.exports = {
                 res.status(400).send({
                     message: "A visisbilidade do evento e obrigatoria."
                 })
-            } else if (!starts_at) {
+            } else if (!starts_at?.date || !starts_at?.hm) {
                 res.status(400).send({
                     message: "A data de inicio e obrigatorio."
                 })
-            } else if (!ends_at) {
+            } else if (!ends_at?.date || !ends_at?.hm) {
                 res.status(400).send({
                     message: "A data de termino e obrigatorio."
                 })
@@ -70,8 +67,6 @@ module.exports = {
                     message: "A data de termino nao pode ser antes que a data de inicio."
                 })
             } else {
-                let cover = { url: null, key: null };
-
                 const user = await User.findOne({
                     _id: created_by
                 })
@@ -90,43 +85,6 @@ module.exports = {
                         tickets_available_count = 0;
                     }
 
-                    // Upload de mídias, se houver
-                    if (req.file) {
-                        const { buffer } = req.file;
-
-                        // Verifica se o arquivo realmente contém um buffer válido
-                        if (!buffer) {
-                            return res.status(400).json({ error: "Nenhuma imagem válida foi enviada." });
-                        }
-
-                        // Criar uma Promise para enviar o buffer para o Cloudinary
-                        const uploadedImage = await new Promise((resolve, reject) => {
-                            const uploadStream = cloudinary.uploader.upload_stream(
-                                {
-                                    folder: "uploads",
-                                    resource_type: "image", // Defina "video" para vídeos
-                                    transformation: [
-                                        { quality: "auto:good", fetch_format: "auto" } // Qualidade automática
-                                    ]
-                                },
-                                (error, result) => {
-                                    if (error) return reject(error);
-                                    resolve(result);
-                                }
-                            );
-
-                            streamifier.createReadStream(buffer).pipe(uploadStream);
-                        });
-
-                        cover = {
-                            original: uploadedImage.secure_url, // Link original
-                            low: cloudinary.url(uploadedImage.public_id, { quality: "auto:low", fetch_format: "auto" }),
-                            medium: cloudinary.url(uploadedImage.public_id, { quality: "auto:good", fetch_format: "auto" }),
-                            high: cloudinary.url(uploadedImage.public_id, { quality: "auto:best", fetch_format: "auto" }),
-                            key: uploadedImage.public_id
-                        }
-                    }
-                    
                     const slug = `${generateSlugName(name)}_${Math.floor(Math.random() * 10000)}`
 
                     const event = await Event.create({
@@ -139,7 +97,13 @@ module.exports = {
                         address: address,
                         status: status,
                         category: category,
-                        cover,
+                        cover: {
+                            original: cover?.url || null,
+                            low: cover?.url || null,
+                            high: cover?.url || null,
+                            medium: cover?.url || null,
+                            key: cover?.public_id || null
+                        },
                         visibility: visibility,
                         tags: [
                             name,
@@ -187,14 +151,16 @@ module.exports = {
                                     quantity: Number(b.quantity) || 0,
                                     price: Number(b.price) || 0,
                                     starts_at: {
-                                        date: b["starts_at.date"] ? new Date(b["starts_at.date"]) : null,
+                                        date: new Date(b?.starts_at.date),
+                                        hm: new Date(b?.starts_at.hm)
                                     },
                                     ends_at: {
-                                        date: b["ends_at.date"] ? new Date(b["ends_at.date"]) : null,
+                                        date: new Date(b?.ends_at.date),
+                                        hm: new Date(b?.ends_at.hm)
                                     },
                                     quantity_for_purchase: {
-                                        min: Number(b["quantity_for_purchase.min"]) || 1,
-                                        max: Number(b["quantity_for_purchase.max"]) || 1
+                                        min: Number(b?.quantity_for_purchase.min) || 1,
+                                        max: Number(b?.quantity_for_purchase.max) || 5
                                     }
                                 })
                             });
@@ -206,7 +172,6 @@ module.exports = {
                     }
                 }
             }
-
         } catch (err) {
 
             // caso haja um erro interno retorne status 500.
