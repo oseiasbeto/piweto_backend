@@ -3,7 +3,7 @@ const Order = require("../../../model/Order"); // Importa o modelo Order para ma
 const Ticket = require("../../../model/Ticket"); // Importa o modelo Ticket para manipular dados de ingressos
 const Batch = require("../../../model/Batch"); // Importa o modelo Batch para manipular dados de lotes de ingressos
 const sendMail = require("../../../mail/sendMail"); // Importa função para enviar e-mails
-//const sendMessage = require("../../../services/sendMessage"); // Importa função para enviar mensagens (ex.: SMS)
+const sendMessage = require("../../../services/sendMessage"); // Importa função para enviar mensagens (ex.: SMS)
 const formatAmount = require("../../../utils/formatAmount"); // Importa função utilitária para formatar valores monetários
 const getTotalTicketsSelected = require("../../../utils/getTotalTicketsSelected"); // Importa função para calcular total de ingressos selecionados
 
@@ -50,7 +50,8 @@ module.exports = {
         const event = await Event.findOne({
           // Busca o evento no banco pelo ID e status ativo ("a")
           _id: event_id
-        });
+        })
+          .populate("created_by", "-password") // Popula o campo created_by, excluindo a senha
 
         if (!event)
           return res.status(400).send({
@@ -307,7 +308,7 @@ module.exports = {
                           }
                         });
 
-                      
+
                         const EXPIRATION_TIME = 3600; // Define tempo de expiração no Redis (1 hora)
                         await redis.set(`pedido:${order_id}`, "pending", {
                           EX: EXPIRATION_TIME,
@@ -378,7 +379,7 @@ module.exports = {
                       message: "Erro ao processar o pagamento por referência. Tente novamente mais tarde.",
                     });
                   })
-                ;
+                  ;
                 break; // Finaliza o caso "reference"
               case "GPO":
                 // Caso o método seja pagamento móvel (Multicaixa)
@@ -397,12 +398,11 @@ module.exports = {
                   });
 
                 try {
-
                   const response = await executeGPOPayment({
                     orderId: order_id,
                     amount,
                     currency: "AOA",
-                    subject: "Piweto - Compra de Ingressos",
+                    subject: "Compra de Ingressos",
                     phoneNumber: phone,
                     customer: {
                       name: full_name,
@@ -412,9 +412,9 @@ module.exports = {
                   })
 
                   const data = response.data.responseStatus;
-                  const status = data.status;
+                  const successful = data.successful;
 
-                  if (status !== "Success") {
+                  if (!successful) {
                     res.status(400).send({
                       message: "O seu pagamento foi recusado pelo sistema Multicaixa Express. Se o problema persistir, contacte a equipa de suporte do Multicaixa Express.",
                     });
@@ -428,9 +428,9 @@ module.exports = {
                       rate: amount > 0 ? rate : 0,
                       event: event._id,
                       reservation_number,
-                      expires_at: moment().add(15, "minutes"), // Expira em 30 minutos
+                      expires_at: moment().add(1, "minutes"), // Expira em 30 minutos
                       coupon: cart.coupon,
-                      status: "p", // Status pendente
+                      status: "a", // Status pendente
                       amount,
                       total_tickets_selected,
                       amount_after_discount,
@@ -462,6 +462,7 @@ module.exports = {
                             order: newOrder._id,
                             batch: b._id,
                             price: b.price,
+                            status: "a", // Status ativo
                             code: generateTicketCode(),
                             tags: [
                               full_name,
@@ -493,21 +494,54 @@ module.exports = {
                         }
                       });
 
-                      
+                      /*
                       const EXPIRATION_TIME = 100; // Define tempo de expiração no Redis (100 segundos)
                       await redis.set(`pedido:${order_id}`, "pending", {
                         EX: EXPIRATION_TIME,
                       }); // Armazena status no Redis
+                      // 
+                      */
 
                       await event.updateOne({
-                        // Atualiza o evento
                         $inc: {
-                          tickets_available_count: -Number(
-                            total_tickets_selected
-                          ),
-                          orders_pending_cash: newOrder.amount_after_rate
-                        },
-                      });
+                          sales_count: +1,
+                          balance: +newOrder.amount_after_rate,
+                          tickets_purchased_count: total_tickets_selected,
+                          tickets_available_count: -total_tickets_selected
+                        }
+                      })
+
+                      sendMessage(
+                        phone.replace(/\s/g, ''),
+                        `Pagamento confirmado com sucesso!\nN da reserva: ${order.id}.\nPIN: ${order.pin}.\nAcesso: ${process.env.CLIENT_URL}reserva`
+                      )
+
+                      if (event?.created_by?.email) {
+                        // Verifica se o organizador do evento possui um e-mail
+                        sendMail(
+                          event.created_by.email,
+                          "new-sale", // Envia um e-mail ao organizador notificando uma nova venda
+                          `Nova venda: ${event.name}`, // Assunto do e-mail
+                          {
+                            // Dados enviados para o template do e-mail
+                            id: order.id, // ID do pedido
+                            eventName: event.name, // Nome do evento
+                            organizerName: event.created_by.full_name, // Nome do organizador
+                            ticketQuantity: total_tickets_selected, // Quantidade de ingressos vendidos
+                            orderDetailsUrl:
+                              process.env.CLIENT_URL +
+                              `gerenciador-de-eventos/participantes/` +
+                              event.slug, // URL para detalhes do pedido
+                            reservationNumber: newOrder.reservation_number, // Número de reserva
+                            amount: formatAmount(newOrder.amount), // Valor total da venda
+                            amountAfterRate: formatAmount(newOrder.amount_after_rate), // Valor após taxas
+                            reference: newOrder?.biz_content?.reference_id || null, // Referência do pagamento
+                            entity: newOrder?.biz_content?.entity_id || null, // Entidade do pagamento
+                            validity: moment(newOrder?.expires_at).format("YYYY/MM/DD HH:mm"), // Data de expiração do pedido
+                          }
+                        );
+                      }
+
                       res.status(200).send({
                         // Retorna sucesso com o pedido criado
                         newOrder,
@@ -516,7 +550,7 @@ module.exports = {
                     }
                   }
                 } catch (err) {
-                  console.error('Erro ao processar o pagamento móvel:', err.response.data.responseStatus);
+                  console.error('Erro ao processar o pagamento móvel:', err.r);
                   res.status(500).send({
                     message: "Erro ao processar o pagamento móvel. Tente novamente mais tarde.",
                   });
@@ -609,7 +643,7 @@ module.exports = {
                             }
                           });
 
-                           
+
                           const EXPIRATION_TIME = 1800; // Define tempo de expiração no Redis (30 minutos)
                           await redis.set(`pedido:${order_id}`, "pending", {
                             EX: EXPIRATION_TIME,

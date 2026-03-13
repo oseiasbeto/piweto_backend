@@ -24,17 +24,11 @@ module.exports = {
                 });
             }
 
-            const user = await User.findOne({ phone: phone.replace(/\s/g, '') });
+            const user = await User.findOne({ phone: phone.replace(/\s/g, ''), status: "a" });
 
             if (!user || !(await compare(password, user.password))) {
                 return res.status(400).send({
                     message: "Credenciais inválidas.",
-                });
-            }
-
-            if (user.status === "p") {
-                return res.status(400).send({
-                    message: "Usuário não está ativo.",
                 });
             }
 

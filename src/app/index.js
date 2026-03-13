@@ -6,7 +6,7 @@ const express = require("express") // Framework web para Node.js
 const app = express() // Criando uma instância do Express
 const bodyParser = require('body-parser') // Middleware para processar dados do corpo da requisição
 const { connectRedis } = require("./redisClient") // Importa função para conectar ao Redis
-//const { initTokenRefresh } = require("./services/appypay") // ← IMPORTE AQUI
+const { initTokenRefresh } = require("./services/appypay") // ← IMPORTE AQUI
 
 // Conectando ao banco de dados
 const connectDB = require('./config/connectDb'); // Importa a função de conexão com o banco de dados
@@ -16,9 +16,9 @@ connectDB(); // Chama a função para estabelecer a conexão
 const env = process.env.NODE_ENV
 
 // Se o ambiente for de produção, conecta ao Redis
-if (env === 'prod') {
+if (env == 'prod') {
     connectRedis().then(() => {
-       // initTokenRefresh(); // ← CHAMAR APÓS CONEXÃO BEM-SUCEDIDA
+        initTokenRefresh(); // ← CHAMAR APÓS CONEXÃO BEM-SUCEDIDA
     }).catch(error => {
         console.error('Falha ao conectar Redis:', error);
     });

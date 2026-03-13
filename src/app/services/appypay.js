@@ -87,6 +87,7 @@ async function executeGPOPayment({
   if (!token) {
     throw new Error('Token não disponível. Certifique-se de que o token foi gerado corretamente.');
   }
+
   const response = await axios.post(
     process.env.API_APPYPAY + '/charges',
     {
@@ -99,9 +100,9 @@ async function executeGPOPayment({
         phoneNumber: phoneNumber
       },
       notify: {
-        name: customer?.name ?? null,
-        telephone: customer?.phone ?? phoneNumber,
-        email: customer?.email ?? null,
+        name: "Oseias BC",
+        telephone: "948360831",
+        email: "oseiasbetodev@gmail.com",
         smsNotification: true,
         emailNotification: true
       }
@@ -113,7 +114,6 @@ async function executeGPOPayment({
       },
     }
   );
-
   return response;
 }
 
