@@ -15,6 +15,7 @@ async function sendMessage(to, message) {
         console.log('✅ SMS enviado com sucesso!');
     } catch (err) {
         console.log("Erro ao enviar a SMS: ", err.message);
+        return err
     }
 }
 

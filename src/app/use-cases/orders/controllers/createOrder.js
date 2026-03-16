@@ -336,6 +336,7 @@ module.exports = {
                           );
                         }
 
+                        console.log(phone)
                         /* 
                         // Envia mensagem (ex.: SMS) com detalhes do pagamento
                         
@@ -494,14 +495,6 @@ module.exports = {
                         }
                       });
 
-                      /*
-                      const EXPIRATION_TIME = 100; // Define tempo de expiração no Redis (100 segundos)
-                      await redis.set(`pedido:${order_id}`, "pending", {
-                        EX: EXPIRATION_TIME,
-                      }); // Armazena status no Redis
-                      // 
-                      */
-
                       await event.updateOne({
                         $inc: {
                           sales_count: +1,
@@ -513,28 +506,28 @@ module.exports = {
 
                       sendMessage(
                         phone.replace(/\s/g, ''),
-                        `Pagamento confirmado com sucesso!\nN da reserva: ${order.id}.\nPIN: ${order.pin}.\nAcesso: ${process.env.CLIENT_URL}reserva`
+                        `Pagamento confirmado com sucesso!\nId da reserva: ${newOrder.id}.\nPIN: ${newOrder.pin}.\nAcesso: ${process.env.CLIENT_URL}reserva`
                       )
-
+                             
                       if (event?.created_by?.email) {
                         // Verifica se o organizador do evento possui um e-mail
                         sendMail(
-                          event.created_by.email,
+                          event?.created_by?.email,
                           "new-sale", // Envia um e-mail ao organizador notificando uma nova venda
-                          `Nova venda: ${event.name}`, // Assunto do e-mail
+                          `Nova venda: ${event?.name}`, // Assunto do e-mail
                           {
                             // Dados enviados para o template do e-mail
-                            id: order.id, // ID do pedido
-                            eventName: event.name, // Nome do evento
-                            organizerName: event.created_by.full_name, // Nome do organizador
+                            id: newOrder?.id, // ID do pedido
+                            eventName: event?.name, // Nome do evento
+                            organizerName: event?.created_by?.full_name, // Nome do organizador
                             ticketQuantity: total_tickets_selected, // Quantidade de ingressos vendidos
                             orderDetailsUrl:
                               process.env.CLIENT_URL +
                               `gerenciador-de-eventos/participantes/` +
                               event.slug, // URL para detalhes do pedido
-                            reservationNumber: newOrder.reservation_number, // Número de reserva
-                            amount: formatAmount(newOrder.amount), // Valor total da venda
-                            amountAfterRate: formatAmount(newOrder.amount_after_rate), // Valor após taxas
+                            reservationNumber: newOrder?.reservation_number, // Número de reserva
+                            amount: formatAmount(newOrder?.amount), // Valor total da venda
+                            amountAfterRate: formatAmount(newOrder?.amount_after_rate), // Valor após taxas
                             reference: newOrder?.biz_content?.reference_id || null, // Referência do pagamento
                             entity: newOrder?.biz_content?.entity_id || null, // Entidade do pagamento
                             validity: moment(newOrder?.expires_at).format("YYYY/MM/DD HH:mm"), // Data de expiração do pedido
@@ -550,7 +543,7 @@ module.exports = {
                     }
                   }
                 } catch (err) {
-                  console.error('Erro ao processar o pagamento móvel:', err.r);
+                  console.error('Erro ao processar o pagamento móvel:', err.response.data);
                   res.status(500).send({
                     message: "Erro ao processar o pagamento móvel. Tente novamente mais tarde.",
                   });
