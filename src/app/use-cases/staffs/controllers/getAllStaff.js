@@ -148,6 +148,7 @@ module.exports = {
                         status: '$eventData.status',
                         slug: '$eventData.slug',
                         category: '$eventData.category',
+                        balance: '$eventData.balance',
                         address: '$eventData.address',
                         starts_at: '$eventData.starts_at',
                         ends_at: '$eventData.ends_at',
