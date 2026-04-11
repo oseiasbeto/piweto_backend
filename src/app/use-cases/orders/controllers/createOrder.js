@@ -415,6 +415,8 @@ module.exports = {
                   const data = response.data.responseStatus;
                   const successful = data.successful;
 
+                  console.log('Resposta do pagamento móvel:', response.data);
+                  console.log('Dados do status do pagamento móvel:', data);
                   if (!successful) {
                     res.status(400).send({
                       message: "O seu pagamento foi recusado pelo sistema Multicaixa Express. Se o problema persistir, contacte a equipa de suporte do Multicaixa Express.",
