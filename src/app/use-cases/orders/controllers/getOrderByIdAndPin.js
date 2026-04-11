@@ -23,6 +23,11 @@ module.exports = {
                 message: "Ups! nao achamos nenhum pedido com este id."
             })
             else {
+                if (!order.viewed) {
+                    order.viewed = true
+                    await order.save()
+                }
+                
                 res.status(200).send({
                     order,
                     message: "Pedido encontrado com sucesso."

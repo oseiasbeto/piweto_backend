@@ -17,6 +17,10 @@ const order = new mongoose.Schema({
         type: Number,
         required: true
     },
+    viewed: {
+        type: Boolean,
+        default: false
+    },
     reservation_number: {
         type: Number,
         required: true
