@@ -18,7 +18,7 @@ const env = process.env.NODE_ENV
 // Se o ambiente for de produção, conecta ao Redis
 if (env == 'prod') {
     connectRedis().then(() => {
-      //  initTokenRefresh(); // ← CHAMAR APÓS CONEXÃO BEM-SUCEDIDA
+       initTokenRefresh(); // ← CHAMAR APÓS CONEXÃO BEM-SUCEDIDA
     }).catch(error => {
         console.error('Falha ao conectar Redis:', error);
     });

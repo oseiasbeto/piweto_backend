@@ -117,7 +117,56 @@ async function executeGPOPayment({
   return response;
 }
 
+async function executeReferencePayment({
+  orderId,
+  amount,
+  currency = 'AOA',
+  subject,
+  referenceNumber,
+  customer,
+  dueDate
+}) {
+  const token = await getToken();
+  if (!token) {
+    throw new Error('Token não disponível. Certifique-se de que o token foi gerado corretamente.');
+  }
+
+  if (!referenceNumber || !dueDate) {
+    throw new Error('Preencha todos os parametros.');
+  }
+
+  const response = await axios.post(
+    process.env.API_APPYPAY + '/charges',
+    {
+      amount,
+      currency,
+      description: subject,
+      merchantTransactionId: orderId,
+      paymentMethod: process.env.REF_MERCHANT_ID_APPYPAY,
+      paymentInfo: {
+        referenceNumber,
+        dueDate
+      },
+      notify: {
+        name: "Oseias BC",
+        telephone: "948360831",
+        email: "oseiasbetodev@gmail.com",
+        smsNotification: true,
+        emailNotification: true
+      }
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    }
+  );
+  return response;
+}
+
 module.exports = {
   initTokenRefresh,
-  executeGPOPayment
+  executeGPOPayment,
+  executeReferencePayment
 };

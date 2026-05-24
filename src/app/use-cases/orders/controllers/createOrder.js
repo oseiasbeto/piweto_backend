@@ -10,15 +10,15 @@ const getTotalTicketsSelected = require("../../../utils/getTotalTicketsSelected"
 const generateTicketCode = require("../../../utils/generateTicketCode")
 const generateReservationPIN = require("../../../utils/generateReservationPIN")
 const generateId = require("../../../utils/generateId"); // Importa função utilitária para gerar IDs únicos
+const generateReferenceNumber = require("../../../utils/generateReferenceNumber")
 
 const { redis } = require("../../../redisClient"); // Importa cliente Redis para caching
 
 const {
   executePayPayPayment,
-  executeReferencePayment
 } = require("../../../services/paypay"); // Importa função para processar pagamentos por referência
 
-const { executeGPOPayment } = require("../../../services/appypay"); // Importa função para processar pagamentos móveis (Multicaixa)
+const { executeGPOPayment, executeReferencePayment } = require("../../../services/appypay"); // Importa função para processar pagamentos móveis (Multicaixa)
 const moment = require("moment"); // Importa biblioteca Moment.js para manipulação de datas
 
 module.exports = {
@@ -39,6 +39,8 @@ module.exports = {
       const { event_id } = req.params; // Obtém o ID do evento dos parâmetros da URL
       const order_id = generateId(); // Gera um ID único para o pedido
       const order_pin = generateReservationPIN()
+      const reference_number = generateReferenceNumber()
+      const due_date = moment().add(30, "minutes")
 
       if (!event_id)
         return res.status(400).send({
@@ -224,19 +226,28 @@ module.exports = {
             ) {
               case "reference": // Caso o método seja pagamento por referência
                 const data = {
-                  // Dados para o processamento do pagamento
-                  price: amount,
-                  subject: `Adquira ingressos para o evento: ${event.name}`,
-                  order_id,
-                  timeout_express: "30m",
+                    orderId: order_id,
+                    amount,
+                    currency: "AOA",
+                    subject: "Compra de Ingressos",
+                    referenceNumber: reference_number,
+                    dueDate: due_date,
+                    customer: {
+                      name: full_name,
+                      phone: phone,
+                      email: email
+                    }
                 };
 
                 await executeReferencePayment(data)
                   .then(async (response) => {
-                    // Executa o pagamento
-                    if (response.data.code == "S0001") {
-                      // Se o pagamento for bem-sucedido
 
+                    const {responseStatus} = response?.data
+                
+                    // Executa o pagamento
+                    if (responseStatus && responseStatus?.successful) {
+                      // Se o pagamento for bem-sucedido
+                      
                       const newOrder = await Order.create({
                         // Cria o pedido no banco
                         id: order_id,
@@ -245,16 +256,19 @@ module.exports = {
                         rate: amount > 0 ? rate : 0,
                         event: event._id,
                         reservation_number,
-                        expires_at: moment().add(30, "minutes"), // Expira em 30 minutos
+                        expires_at: due_date, // Expira em 30 minutos
                         coupon: cart.coupon,
                         status: "p", // Status pendente
                         amount,
                         total_tickets_selected,
                         amount_after_discount,
                         amount_after_rate,
-                        biz_content: response.data
-                          ? response.data.biz_content
-                          : null, // Dados do pagamento
+                        biz_content: {
+                          reference_id: responseStatus?.reference?.referenceNumber,
+                          entity_id: responseStatus?.reference?.entity,
+                          due_date: responseStatus?.reference?.dueDate,
+                          status: responseStatus?.status,
+                        }, // Dados do pagamento
                         data: {
                           full_name,
                           email,
@@ -336,7 +350,6 @@ module.exports = {
                           );
                         }
 
-                        console.log(phone)
                         /* 
                         // Envia mensagem (ex.: SMS) com detalhes do pagamento
                         
