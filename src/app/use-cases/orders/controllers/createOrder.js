@@ -31,7 +31,7 @@ module.exports = {
         // Desestrutura dados enviados no corpo da requisição
         full_name,
         email,
-        phone,
+        phone = phone ? phone.replace(/\s/g, '') : null,
         payment_method,
         cart,
       } = req.body;
