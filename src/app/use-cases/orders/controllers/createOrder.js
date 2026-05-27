@@ -420,7 +420,7 @@ module.exports = {
                     phoneNumber: phone,
                     customer: {
                       name: full_name,
-                      phone: phone.replace(/\s/g, ''),
+                      phone: phone,
                       email: email
                     }
                   })

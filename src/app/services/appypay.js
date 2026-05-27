@@ -97,7 +97,7 @@ async function executeGPOPayment({
       merchantTransactionId: orderId,
       paymentMethod: process.env.GPO_MERCHANT_ID_APPYPAY,
       paymentInfo: {
-        phoneNumber: phoneNumber
+        phoneNumber: phoneNumber.replace(/\s/g, '')
       },
       notify: {
         name: "Oseias BC",
