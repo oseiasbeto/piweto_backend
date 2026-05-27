@@ -31,7 +31,7 @@ module.exports = {
         // Desestrutura dados enviados no corpo da requisição
         full_name,
         email,
-        phone = phone ? phone.replace(/\s/g, '') : null,
+        phone,
         payment_method,
         cart,
       } = req.body;
@@ -420,7 +420,7 @@ module.exports = {
                     phoneNumber: phone,
                     customer: {
                       name: full_name,
-                      phone: phone,
+                      phone: phone.replace(/\s/g, ''),
                       email: email
                     }
                   })
