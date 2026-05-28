@@ -410,17 +410,17 @@ module.exports = {
                     message:
                       "Informe um número de telefone válido para processar o pagamento móvel.",
                   });
-
                 try {
+                  
                   const response = await executeGPOPayment({
                     orderId: order_id,
                     amount,
                     currency: "AOA",
                     subject: "Compra de Ingressos",
-                    phoneNumber: phone,
+                    phoneNumber: phone.replace(/\s/g, ''),
                     customer: {
                       name: full_name,
-                      phone: phone,
+                      phone: phone.replace(/\s/g, ''),
                       email: email
                     }
                   })
